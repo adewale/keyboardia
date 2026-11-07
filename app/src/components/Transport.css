@@ -553,6 +553,9 @@
 }
 
 .swing-value {
+  /* Monospace so the readout does not jitter as the digits change. It used to
+     arrive from a global .swing-value rule in TrackRow.css's pattern tools. */
+  font-family: monospace;
   font-size: 14px;
   font-weight: bold;
   color: var(--color-yellow-text);

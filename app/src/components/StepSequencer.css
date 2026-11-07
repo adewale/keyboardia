@@ -101,14 +101,37 @@
 .tracks {
   flex: 1;
   min-width: 0; /* Allow shrinking */
-  /* Horizontal scroll for the "sea of cells" - all tracks scroll together */
-  overflow-x: auto;
+  /* One scroller for the "sea of cells": all tracks scroll together
+     horizontally, and on desktop it is also the vertical scroller so the
+     editor dock can pin to its bottom edge (position: sticky; bottom: 0).
+     `overflow-x: auto` alone already computed overflow-y to auto, so this
+     only changes behaviour where a max-height applies below. */
+  overflow: auto;
   padding-bottom: 8px;
+}
+
+/* Desktop: cap the scroller so the pinned editor dock and the rows above it
+   share the viewport. The floor keeps short windows usable. Mobile keeps its
+   content-sized track area (phase 2 changes nothing there). */
+.step-sequencer[data-orientation="desktop"] .tracks {
+  max-height: max(78vh, 440px);
+  /* Sticky offsets are measured inside the scroller's padding, so bottom
+     padding here would leave rows showing under the pinned dock. The same
+     8px of space moves to the content's margin. */
+  padding-bottom: 0;
+}
+
+.step-sequencer[data-orientation="desktop"] .tracks-inner {
+  margin-bottom: 8px;
 }
 
 /* Inner container that expands to fit widest track */
 .tracks-inner {
   display: inline-flex;
+  /* An inline-flex box sits on its first item's baseline. Since the ruler
+     row became that first item, baseline alignment pushed the whole grid
+     2.25px down the scroller and every cell landed on a quarter pixel. */
+  vertical-align: top;
   flex-direction: column;
   gap: 2px;
   min-width: 100%; /* At least fill the viewport */
@@ -127,6 +150,7 @@
 /* Custom scrollbar styling for the tracks panel */
 .tracks::-webkit-scrollbar {
   height: 8px;
+  width: 8px;
 }
 
 .tracks::-webkit-scrollbar-track {
@@ -311,7 +335,7 @@
   .step-sequencer.portrait-mode .transport-bar,
   .step-sequencer.portrait-mode .mixer-panel-container,
   .step-sequencer.portrait-mode .pitch-panel-container,
-  .step-sequencer.portrait-mode .loop-ruler,
+  .step-sequencer.portrait-mode .ruler-row,
   .step-sequencer.portrait-mode .selection-badge,
   .step-sequencer.portrait-mode .sequencer-content,
   .step-sequencer.portrait-mode .keyboard-shortcuts-panel {
@@ -336,11 +360,12 @@
 
    In landscape mode (detected by JS via useOrientationMode hook), we show:
    - Simplified Transport (hide Scale, FX, Mixer, Pitch, Unmute buttons)
-   - Full track grid with inline drawer pattern
+   - Full track grid, each row with the two-line control block
    - Expanded step count (15-16 steps visible vs 5-6 in old mobile)
 
-   The TrackDrawer component provides all track controls in an
-   accordion pattern - only one drawer open at a time.
+   The editor dock is the one disclosure surface: a bottom dock about 45% of
+   the viewport tall (EditorDock.css). A row's ♪ opens it on Notes; its name
+   opens the Track pane, which holds every control the row has no room for.
    ========================================================================== */
 
 /* ==========================================================================
@@ -394,6 +419,6 @@
 }
 
 /* Loop ruler - hide in mobile landscape (too cramped) */
-.step-sequencer[data-orientation="landscape"] .loop-ruler {
+.step-sequencer[data-orientation="landscape"] .ruler-row {
   display: none;
 }

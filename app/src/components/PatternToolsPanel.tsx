@@ -1,7 +1,8 @@
 /**
  * PatternToolsPanel - Pattern manipulation tools for step sequencer
  *
- * Extracted from TrackRow.tsx to reduce component complexity (NEW-002c).
+ * Extracted from TrackRow.tsx to reduce component complexity (NEW-002c). It
+ * renders in the editor dock's Track pane (specs/PIANO-ROLL-DOCK.md, phase 7).
  * Provides rotate, invert, reverse, mirror, Euclidean fill, and per-track swing.
  *
  * Features:
@@ -15,6 +16,7 @@
 
 import React, { useCallback } from 'react';
 import { clamp } from '../shared/validation';
+import './PatternToolsPanel.css';
 
 export interface PatternToolsPanelProps {
   /** Whether the track has any active steps */
@@ -37,6 +39,8 @@ export interface PatternToolsPanelProps {
   onEuclideanFill?: (hits: number) => void;
   /** Callback for swing change */
   onSwingChange?: (swing: number) => void;
+  /** Published session: show the tools, accept no edits */
+  disabled?: boolean;
 }
 
 /**
@@ -69,6 +73,7 @@ export function PatternToolsPanel({
   onMirror,
   onEuclideanFill,
   onSwingChange,
+  disabled = false,
 }: PatternToolsPanelProps) {
   // Handle Euclidean slider change
   const handleEuclideanChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -90,7 +95,7 @@ export function PatternToolsPanel({
           onClick={() => onRotate?.('left')}
           title="Rotate pattern left (wrap)"
           aria-label="Rotate pattern left"
-          disabled={!hasSteps}
+          disabled={disabled || !hasSteps}
         >
           ←
         </button>
@@ -99,7 +104,7 @@ export function PatternToolsPanel({
           onClick={() => onRotate?.('right')}
           title="Rotate pattern right (wrap)"
           aria-label="Rotate pattern right"
-          disabled={!hasSteps}
+          disabled={disabled || !hasSteps}
         >
           →
         </button>
@@ -111,6 +116,7 @@ export function PatternToolsPanel({
           onClick={() => onInvert?.()}
           title="Invert pattern (toggle all steps)"
           aria-label="Invert pattern"
+          disabled={disabled}
         >
           Invert
         </button>
@@ -119,7 +125,7 @@ export function PatternToolsPanel({
           onClick={() => onReverse?.()}
           title="Reverse pattern"
           aria-label="Reverse pattern"
-          disabled={!hasSteps}
+          disabled={disabled || !hasSteps}
         >
           Reverse
         </button>
@@ -128,7 +134,7 @@ export function PatternToolsPanel({
           onClick={() => onMirror?.()}
           title="Smart Mirror: creates symmetry from the busier half"
           aria-label="Smart mirror pattern"
-          disabled={!hasSteps || stepCount <= 2}
+          disabled={disabled || !hasSteps || stepCount <= 2}
         >
           Mirror
         </button>
@@ -143,6 +149,8 @@ export function PatternToolsPanel({
           max={stepCount}
           value={activeStepCount}
           onChange={handleEuclideanChange}
+          disabled={disabled}
+          aria-label="Euclidean hits"
           title={`Euclidean rhythm: distribute ${activeStepCount} hits across ${stepCount} steps`}
         />
         <span className="euclidean-value">{activeStepCount}/{stepCount}</span>
@@ -157,6 +165,8 @@ export function PatternToolsPanel({
           max="100"
           value={swing}
           onChange={handleSwingSlider}
+          disabled={disabled}
+          aria-label="Track swing"
           title={`Track swing: ${swing === 0 ? 'uses global' : `${swing}%`}`}
         />
         <span className="swing-value">{`${swing}%`}</span>

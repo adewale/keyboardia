@@ -49,10 +49,10 @@ test.describe('Track Management', () => {
 
   // This test used to try a delete button, fall back to a right-click context
   // menu, and on failing both do `console.log('Delete button not found ...')`
-  // and pass. Delete being entirely broken produced a green test. It also
-  // chased three selectors that do not exist in TrackRow.tsx — the real control
-  // is `.action-btn.delete` in `.track-actions`, rendered unconditionally
-  // (StepSequencer.tsx passes canDelete={true}) and not behind any menu.
+  // and pass. Delete being entirely broken produced a green test. The real
+  // control is the Delete button in the editor dock's Track pane
+  // (specs/PIANO-ROLL-DOCK.md): the row has no actions of its own, and a
+  // track's name docks it. Not behind any menu.
   test('can delete a track', async ({ page }) => {
     const trackRows = page.locator('.track-row');
     await expect(trackRows).toHaveCount(0);
@@ -60,7 +60,11 @@ test.describe('Track Management', () => {
     await addTrack(page);
     await expect(trackRows).toHaveCount(1);
 
-    const deleteBtn = trackRows.first().locator('.action-btn.delete');
+    // A drum track docks on its Track pane (it has no Notes).
+    await trackRows.first().locator('.track-name').click();
+    const deleteBtn = page.getByTestId('editor-dock')
+      .getByRole('group', { name: 'Track actions' })
+      .getByRole('button', { name: 'Delete' });
     await expect(deleteBtn).toBeVisible();
     await deleteBtn.click();
 

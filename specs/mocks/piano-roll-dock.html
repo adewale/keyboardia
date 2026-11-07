@@ -1,0 +1,1594 @@
+<!doctype html>
+<html lang="en" data-ui="one" data-rows="tallwho" data-crap="on" data-vel="fill" data-rowfix="on" data-dockfix="on">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Keyboardia Piano Roll</title>
+<style>
+  /* Layout: the Keyboardia sequencer (transport, loop ruler, four track rows on the 39px step pitch) with
+     the two-line control block and the proposed editor dock pinned under the grid.
+     Single dark theme by choice: these are the app's own tokens.
+     One declaration per selector: the numbers here are the PIANO-ROLL-DOCK.md contract. */
+  :root {
+    --color-accent: #e85a30; --color-surface: #1e1e1e;
+    --color-drums: #e67e22; --color-bass: #9b59b6; --color-keys: #3498db; --color-leads: #e91e63; --color-pads: #2ecc71; --color-fx: #00bcd4; --color-purple-dark: #8e44ad;
+    /* "On" for views and toggles (open view, selected tab, pressed toggle): a solid light fill, like M and S fill solid,
+       with no hue so it never reads as an instrument category (cyan is FX) or as the orange accent. */
+    --on-bg: #e6e6e6; --on-line: #e6e6e6; --on-ink: #121212;
+    --bg: #121212; --surface: var(--color-surface); --surface-2: #2a2a2a; --surface-3: #333333; --surface-4: #444444;
+    --border: #3a3a3a; --border-light: #4a4a4a; --border-hover: #555555;
+    --text: rgba(255,255,255,.87); --muted: rgba(255,255,255,.6); --dim: rgba(255,255,255,.38);
+    --accent: var(--color-accent); --accent-hi: #f07048; --accent-text: #ff8a65;
+    --success: #1db954; --info: #3498db; --info-text: #5eb3ea; --info-region: rgba(74,158,206,.3); --warning: #ffc107;
+    --purple: #8e44ad; --purple-text: #c58ad6; --purple-muted: rgba(155,89,182,.15);
+    --cat-keys: var(--color-keys); --cat-bass: var(--color-bass); --cat-drums: var(--color-drums); --cat-leads: var(--color-leads);
+    --playhead: #ffffff;
+    --piano-key-surface: #0f0e0d; --piano-grid-step: rgb(255 255 255 / 4.5%); --piano-grid-beat: rgb(255 255 255 / 10%);
+    --piano-grid-bar: rgb(255 255 255 / 22%); --piano-grid-octave: rgb(255 255 255 / 16%); --piano-grid-black-row: rgb(0 0 0 / 22%);
+    --note-velocity: 1;
+    --piano-key-white: #c9c5bc; --piano-key-white-hover: #ddd9d0; --piano-key-black: #131211; --piano-key-black-hover: #2a2826; --piano-key-label: #3f3c37;
+    --font-ui: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-mono: 'SF Mono', 'Consolas', monospace;
+    --step-w: 36px; --step-pitch: 39px;
+    /* The control tile (F): 231px, six step pitches less the gap. The tall-row rules below lay it out. */
+    --track-left-width: 231px;
+    --pitch-row-height: 18px;
+    --dock-grid-h: 252px; --dock-head-height: 84px; --dock-toolbar-height: 48px;
+    --note-presence-outline: #b8b8b8;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-ui); font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  .page-wrap { max-width: 1280px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 56px; display: flex; flex-direction: column; gap: 18px; }
+  .eyebrow { font-family: var(--font-mono); font-size: 11px; line-height: 16px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent-text); }
+  h1 { font-size: 22px; font-weight: 600; margin: 2px 0 4px; letter-spacing: -.01em; text-wrap: balance; }
+  h2 { font-size: 15px; font-weight: 600; margin: 10px 0 8px; }
+  .lede { color: var(--muted); max-width: 72ch; margin: 0; }
+  button { font: inherit; }
+  button:focus-visible, input:focus-visible, select:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--info-text); outline-offset: 2px; }
+  /* Dock toolbar and track tabs keep the ring inside their clipped strips. */
+  .pane :focus-visible, .track-tabs .chip:focus-visible { outline-offset: -2px; }
+  [hidden] { display: none !important; }
+
+  /* ===== App shell ===== */
+  .sequencer { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .transport { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 4px 4px 8px; }
+  .play-button { width: 56px; height: 56px; border: none; border-radius: 50%; background: var(--success); color: #000; font-size: 22px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+  .play-button::before { content: ''; position: absolute; inset: 0; background: rgba(255,255,255,.15); border-radius: 50%; transform: scaleX(0); transform-origin: left center; transition: transform 250ms ease-out; }
+  .play-button:hover::before { transform: scaleX(1); }
+  .play-button.playing { background: var(--accent); }
+  .bpm { display: flex; flex-direction: column; line-height: 1.1; }
+  .bpm b { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .bpm span { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .pill { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px; border-radius: 6px; background: var(--surface-2); border: 1px solid #6c6c76; color: var(--text); font-size: 13px; cursor: pointer; }
+  .pill .caret { color: var(--muted); font-size: 10px; }
+  .pill.icon { width: 32px; padding: 0; justify-content: center; }
+  .detail-info { display: inline-flex; align-items: baseline; gap: 8px; color: var(--text); }
+  .detail-info .k { font: 500 11px/1 var(--font-ui); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .detail-info .id { font-size: 12px; color: var(--muted); }
+  .pill[aria-pressed="true"] { border-color: var(--info-text); color: var(--info-text); background: rgba(52,152,219,.15); }
+  .transport .spacer { flex: 1; }
+  .session-name { color: var(--muted); font-size: 13px; }
+  .hint { font-size: 12px; color: var(--muted); }
+
+  /* ===== The scroller: horizontal as today, plus vertical so the dock can pin to its bottom ===== */
+  .tracks { overflow: auto; max-height: 78vh; position: relative; scrollbar-color: var(--surface-4) var(--surface-2); }
+  .tracks::-webkit-scrollbar { height: 8px; width: 8px; }
+  .tracks::-webkit-scrollbar-track { background: var(--surface-2); border-radius: 4px; }
+  .tracks::-webkit-scrollbar-thumb { background: var(--surface-4); border-radius: 4px; }
+  .tracks-inner { display: flex; width: max-content; flex-direction: column; gap: 2px; min-width: 100%; min-height: 100%; }
+  .tracks-inner .rows { display: flex; flex-direction: column; gap: 2px; }
+  .tracks-inner .fill { flex: 1; }
+
+  /* ===== Loop ruler (ported LoopRuler behaviour, grid aligned) ===== */
+  .ruler-row { display: flex; gap: 8px; margin-bottom: 6px; position: sticky; top: 0; z-index: 5; background: var(--bg); padding-bottom: 2px; }
+  .ruler-spacer { width: var(--track-left-width); min-width: var(--track-left-width); position: sticky; left: 0; z-index: 3; background: var(--bg); display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; font-size: 11px; color: var(--muted); }
+  .loop-ruler { position: relative; height: 24px; width: 1253px; flex: none; background: var(--surface-2); border-radius: 4px; cursor: crosshair; user-select: none; touch-action: none; }
+  .loop-ruler:hover, .loop-ruler.has-loop { background: var(--surface-3); }
+  .loop-ruler.dragging { cursor: ew-resize; }
+  .ruler-marker { position: absolute; top: 0; height: 100%; pointer-events: none; }
+  .ruler-marker.beat { width: 1px; background: var(--border-light); opacity: .6; }
+  .ruler-marker.pg { width: 2px; background: var(--border-light); }
+  .marker-label { position: absolute; top: 3px; left: 4px; font-family: var(--font-mono); font-size: 10px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .ruler-marker.pg .marker-label { font-weight: 600; }
+  .loop-region { position: absolute; top: 2px; bottom: 2px; background: var(--info-region); border-radius: 2px; pointer-events: none; }
+  .loop-region.preview { background: rgba(74,158,206,.2); border: 1px dashed var(--info); }
+  .loop-bracket { position: absolute; top: 0; bottom: 0; width: 4px; background: var(--info); }
+  .loop-bracket.start { left: 0; border-radius: 2px 0 0 2px; }
+  .loop-bracket.end { right: 0; border-radius: 0 2px 2px 0; }
+  .shift-click-marker { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--warning); animation: marker-pulse 1s ease-in-out infinite; }
+  @keyframes marker-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
+  .ruler-playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--playhead); pointer-events: none; z-index: 2; display: none; }
+  .loop-ruler.playing .ruler-playhead { display: block; }
+
+  /* ===== Track rows, on the row diet ===== */
+  .track-row-wrapper { display: flex; flex-direction: column; border-radius: 4px; }
+  .track-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; height: 58px; border-radius: 4px; min-width: max-content; position: relative; }
+  .track-left {
+    align-content: center; position: sticky; left: 0; z-index: 3; background: var(--surface);
+    box-shadow: 4px 0 8px -4px rgba(0,0,0,.2); height: 50px; width: var(--track-left-width); min-width: var(--track-left-width);
+  }
+  .track-name { height: 24px; border: 0; color: var(--text); background: transparent; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; padding: 0 2px; text-transform: capitalize; overflow: hidden; white-space: nowrap; cursor: pointer; border-radius: 3px; }
+  .track-name:hover { background: rgba(255,255,255,.05); }
+  .rename-input { width: 100%; height: 24px; font: inherit; color: var(--text); background: var(--surface-2); border: 1px solid #787883; border-radius: 4px; }
+  .line2 { display: flex; gap: 4px; align-items: center; }
+  .line2 .group { display: inline-flex; gap: 2px; flex: none; }
+  .tl-btn { height: 24px; width: 24px; border: 1px solid var(--border-hover); border-radius: 3px; background: transparent; color: var(--muted); font-size: 10px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
+  .tl-btn:hover { border-color: var(--muted); }
+  .expand-toggle { width: 24px; height: 24px; border: 1px solid var(--surface-4); border-radius: 3px; background: var(--surface-2); color: var(--muted); font-size: 10px; font-weight: 700; cursor: pointer; transition: background 150ms ease; padding: 0; }
+  .expand-toggle.active { background: var(--accent); border-color: var(--accent-hi); color: var(--bg); }
+  .velocity-toggle { width: 24px; height: 24px; border: 1px solid var(--surface-4); border-radius: 3px; background: var(--surface-2); color: var(--muted); font-size: 10px; font-weight: 700; cursor: pointer; padding: 0; }
+  /* Muting changes the M button only; the row keeps full opacity so names, values and controls keep their contrast. */
+  .steps { flex: 1; min-width: 0; }
+  .step-grid { display: flex; gap: 3px; }
+  .step-cell.page-start { margin-left: 8px; }
+  .step-cell { width: var(--step-w); height: 36px; border: 2px solid var(--border); border-radius: 4px; background: var(--surface-2); cursor: pointer; position: relative; flex: 0 0 auto; padding: 0; }
+  .step-cell:hover { background: var(--surface-3); border-color: var(--border-light); }
+  .step-cell.beat-start { border-left-color: var(--border-light); border-left-width: 3px; }
+  .step-cell.active { border-color: var(--accent-hi); }
+  .step-cell.active:hover { outline: 1px solid var(--note-presence-outline); }
+  /* Marks, production evolved. Volume is the cell's level: accent from the bottom up to the volume, a dim tint above,
+     so a full note is a plain cell (production's velocity fill, kept). Pitch is production's corner badge with the
+     amount in it: ↑7, ↓5, on the note's first cell only. A tie joins the cells into one shape across the gap
+     (production's double left border, grown into a bridge). An envelope-only lock is a corner fold. A lock kept on
+     a step that is off keeps its badge, dimmed, inside a dashed border. No blue, no purple. */
+  html { --accent-dim: color-mix(in srgb, var(--color-accent) 32%, var(--surface-2)); }
+  .step-cell .pchip { position: absolute; top: 3px; right: 3px; height: 12px; padding: 0 3px; border-radius: 2px; background: rgba(0,0,0,.55); color: #fff; font-family: var(--font-mono); font-size: 9px; font-weight: 600; line-height: 12px; letter-spacing: -.2px; pointer-events: none; }
+  .step-cell .env-fold { position: absolute; right: -2px; bottom: -2px; width: 10px; height: 10px; background: linear-gradient(135deg, transparent 50%, rgba(0,0,0,.55) 50%); border-radius: 0 0 4px 0; pointer-events: none; }
+  .step-cell.tie { border-top-left-radius: 0; border-bottom-left-radius: 0; border-left-color: transparent !important; }
+  .step-cell.tie-next { border-top-right-radius: 0; border-bottom-right-radius: 0; border-right-color: transparent !important; }
+  .step-cell.tie::before { content: ''; position: absolute; top: -2px; bottom: -2px; left: calc(-1 * var(--tie-gap, 3px)); width: var(--tie-gap, 3px); background: inherit; background-clip: padding-box; border-top: 2px solid var(--accent-hi); border-bottom: 2px solid var(--accent-hi); box-sizing: border-box; pointer-events: none; }
+  .step-cell.tie, .step-cell.tie-next { background-clip: padding-box; }
+  .step-cell.tie { border-left-width: 0; padding-left: 2px; }
+  .step-cell.tie-next { border-right-width: 0; padding-right: 2px; }
+  .step-cell:not(.active).has-lock { border-style: dashed; border-color: color-mix(in srgb, var(--color-accent) 55%, transparent); }
+  .step-cell:not(.active) .pchip { opacity: .55; }
+  .step-cell.playing { border-color: var(--playhead); border-width: 3px; }
+  .step-cell.selected { border-color: var(--info); box-shadow: 0 0 0 2px rgba(74,158,206,.4); }
+  .step-cell.range-selected { outline: 2px solid var(--info-text); outline-offset: 0; }
+  .step-cell.pulse { animation: cell-pulse 150ms ease-out; }
+  @keyframes cell-pulse { 0% { box-shadow: 0 0 0 3px var(--accent); } 100% { box-shadow: 0 0 0 0 transparent; } }
+  /* The row's Copy, Clear and Delete buttons are never shown: they hold the actions and the copy state, and the
+     tile's icon buttons and the Track pane click them. */
+  .row-actions { display: none; }
+  /* Copy status: information, so bare text with the action's icon. It sits in the transport (always visible) and
+     stands in for the Esc hint while a copy is pending or just finished. */
+  .copy-status { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text); }
+  .copy-status svg { width: 16px; height: 16px; flex: none; color: var(--muted); }
+  .copy-status b { font-weight: 600; }
+  .copy-status:empty { display: none; }
+  .copy-status:not(:empty) + .hint { display: none; }
+
+  .velocity-lane { display: flex; gap: 3px; margin-left: calc(var(--track-left-width) + 8px); height: 28px; }
+  .velocity-lane input { width: 36px; flex: none; margin: 0; accent-color: var(--accent); }
+  .velocity-lane input.page-start { margin-left: 8px; }
+
+  /* ===== The dock ===== */
+  .dock { position: sticky; bottom: 0; z-index: 6; display: grid; grid-template-rows: 0fr; transition: grid-template-rows 200ms ease-out; margin-top: 6px; }
+  .dock.open { grid-template-rows: 1fr; }
+  .dock.tall { --dock-grid-h: 432px; }
+  .dock-inner { min-height: 0; overflow: hidden; background: var(--surface); border: 0; border-top: 1px solid var(--border-light); border-radius: 8px 8px 0 0; box-shadow: 0 -8px 24px rgba(0,0,0,.45); display: flex; flex-direction: column; min-width: max-content; }
+  /* Header: 84px = padding 16 + context row 32 + gap 4 + chip row 32. Row one holds the title and the
+     detent/close buttons; row two holds the track tabs and the pane tabs. */
+  .dock-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: 32px 32px; align-items: center; gap: 4px; padding: 8px 10px; border-bottom: 1px solid var(--border); position: sticky; left: 0; background: var(--surface); z-index: 2; height: var(--dock-head-height); flex-shrink: 0; }
+  .dock-title { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; color: var(--muted); }
+  .dock-title b { color: var(--text); font-weight: 600; }
+  .dock-head .right { grid-column: 2; grid-row: 1; justify-self: end; margin: 0; display: inline-flex; gap: 6px; }
+  .dock-head .ib { height: 32px; min-width: 32px; padding: 0 8px; border: 1px solid #787883; border-radius: 4px; background: transparent; color: var(--muted); cursor: pointer; font-size: 12px; }
+  .dock-head .ib:hover { color: var(--text); border-color: var(--border-light); }
+  .chips { display: inline-flex; gap: 2px; background: var(--surface-2); border-radius: 4px; padding: 0; flex: none; }
+  .track-tabs { grid-column: 1; grid-row: 2; min-width: 0; overflow-x: auto; }
+  .pane-tabs { grid-column: 2; grid-row: 2; }
+  .chip { height: 32px; flex: none; padding: 0 9px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font-size: 12px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .chip:disabled { opacity: .4; cursor: default; }
+  .chip:hover { color: var(--text); background: rgba(255,255,255,.05); }
+  .chip.active { background: var(--accent); color: var(--bg); }
+  .chip .tick { width: 6px; height: 16px; border-radius: 0; background: var(--cat); position: relative; }
+  .chip .tick::before { content: ''; position: absolute; left: 2px; top: 2px; width: 4px; height: 12px; background-image: radial-gradient(circle at 1px 2px, rgba(0,0,0,.6) 1px, transparent 1.3px); background-size: 4px 4px; }
+  /* Toolbar: one 48px strip under the header that swaps content with the pane. It is a single
+     scrolling line; the shell holds the overflow buttons and stays sticky during horizontal scroll. */
+  .tools-shell { display: flex; position: sticky; left: 0; height: var(--dock-toolbar-height); flex-shrink: 0; background: var(--surface); z-index: 3; }
+  .dock-tools { flex: 1; min-width: 0; z-index: 2; background: var(--surface); border-bottom: 1px solid var(--border); height: var(--dock-toolbar-height); overflow-x: auto; overflow-y: hidden; }
+  .tool-scroll { height: 32px; align-self: center; width: 32px; border: 1px solid #787883; border-radius: 4px; background: var(--surface-2); color: var(--text); font-size: 18px; flex: none; }
+  .tool-scroll:disabled { opacity: .4; }
+  .pane { padding: 0 10px; height: calc(var(--dock-toolbar-height) - 1px); font-size: 12px; color: var(--muted); display: flex; flex-wrap: nowrap; align-items: center; gap: 14px; width: max-content; min-width: 100%; }
+  .pane b { font-weight: 500; }
+  .pane .rowc { display: flex; gap: 4px; flex-wrap: nowrap; align-items: center; flex: none; white-space: nowrap; }
+  .pane .k { font-size: 11px; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-right: 2px; }
+  .pane .value, .pane input, .pane select, .bpm b { font-family: var(--font-mono); }
+  .pane .context { color: var(--text); }
+  .pane .empty { color: var(--muted); }
+  .cbtn { height: 32px; padding: 0 9px; border: 1px solid #787883; border-radius: 4px; background: var(--surface-2); color: var(--text); font-size: 12px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .cbtn:disabled { opacity: .4; cursor: default; }
+  .cbtn[aria-pressed="true"] { border-color: var(--info-text); color: var(--info-text); background: rgba(52,152,219,.12); }
+  .cbtn.ghost-toggle i { width: 10px; height: 10px; border-radius: 2px; border: 1px dashed var(--gc); display: inline-block; }
+  .cbtn.ghost-toggle[aria-pressed="true"] i { background: var(--gc); border-style: solid; }
+  .cbtn.value { cursor: default; }
+  .pane input[type=range] { width: 110px; height: 32px; accent-color: var(--accent); }
+  .pane input[type=number], .pane select { height: 32px; min-width: 52px; border: 1px solid #787883; border-radius: 4px; background: var(--surface-2); color: var(--text); font: inherit; }
+  .pane input[type=number] { width: 60px; }
+  /* Body: the key panel and pitch grid for Notes and melodic Step; a details panel for Track and drum Step.
+     The Notes grid stays mounted while details show, so H and scroll survive pane switches. */
+  .dock-body { display: flex; gap: 8px; height: var(--dock-grid-h); position: relative; }
+  .dock-left { width: var(--track-left-width); min-width: var(--track-left-width); position: sticky; left: 0; z-index: 3; background: var(--surface); display: grid; grid-template-columns: 18px 1fr; height: var(--dock-grid-h); overflow: hidden; box-shadow: inset -1px 0 var(--border); transition: height 200ms ease-out; }
+  .dock-details { display: none; position: sticky; left: 0; height: var(--dock-grid-h); overflow: auto; padding: 16px; background: var(--surface); color: var(--text); flex: none; }
+  .dock-details h3 { margin: 0 0 8px; font-size: 15px; }
+  .dock-details p { margin: 0 0 12px; max-width: 65ch; color: var(--muted); }
+  .detail-controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+  .detail-controls label { display: flex; gap: 8px; align-items: center; }
+  .detail-controls input, .detail-controls select { height: 32px; background: var(--surface-2); border: 1px solid #787883; border-radius: 4px; color: var(--text); font: inherit; }
+  .dock-body.show-details .dock-details { display: block; }
+  .dock-body.show-details .dock-left, .dock-body.show-details .dock-scroll { display: none; }
+  .range-rail { position: relative; will-change: transform; }
+  .range-rail .bracket { position: absolute; left: 7px; width: 3px; border-radius: 2px; background: linear-gradient(180deg, var(--info-text), rgba(94,179,234,.35)); }
+  .range-rail .bracket::before, .range-rail .bracket::after { content: ''; position: absolute; left: -2px; width: 7px; height: 2px; background: var(--info-text); border-radius: 1px; }
+  .range-rail .bracket::before { top: 0; } .range-rail .bracket::after { bottom: 0; }
+  .keycol { position: relative; background: var(--piano-key-surface); will-change: transform; }
+  /* Keys are buttons positioned by JS from the shared pitch height; labels show on C, hover, focus and press. */
+  .key { position: absolute; left: 0; display: flex; align-items: center; justify-content: flex-end; border: 0; padding: 0 6px 0 0; font-family: var(--font-mono); font-size: 10px; font-weight: 500; line-height: 1; color: var(--piano-key-label); overflow: hidden; cursor: pointer; user-select: none; transition: background 70ms ease, transform 70ms ease; }
+  .key.white { width: 100%; z-index: 1; background: var(--piano-key-white); border-bottom: 1px solid var(--piano-key-surface); border-radius: 0 2px 2px 0; }
+  .key.black { width: 58%; z-index: 2; color: var(--text); background: var(--piano-key-black); border-radius: 0 3px 3px 0; }
+  .key.white.c .lbl { color: var(--piano-key-label); font-weight: 500; }
+  .key .lbl { opacity: 0; }
+  .key.c .lbl, .key:hover .lbl, .key:focus-visible .lbl, .key.hover .lbl, .key.pressed .lbl { opacity: 1; }
+  .keycol.overview .lbl { visibility: hidden; }
+  .key[hidden], .row[hidden] { display: none; }
+  /* Folded: a fold has no key proportions, so every row is a labelled bar with its note name. */
+  .keycol.folded .key { width: 100%; z-index: 1; color: var(--piano-key-label); background: var(--piano-key-white); border-bottom: 1px solid var(--piano-key-surface); border-radius: 0 2px 2px 0; }
+  .keycol.folded .key:hover, .keycol.folded .key.hover { background: var(--piano-key-white-hover); }
+  .keycol.folded .key .lbl { opacity: 1; }
+  .keycol.folded .key.c .lbl { color: var(--text); font-weight: 600; }
+  .key.white:hover, .key.white.hover { background: var(--piano-key-white-hover); }
+  .key.black:hover, .key.black.hover { background: var(--piano-key-black-hover); }
+  .key.pressed { background: var(--accent) !important; transform: translateX(2px); }
+  .key.pressed .lbl { color: var(--bg) !important; }
+  /* Keys outside the recommended range or the scale are not dimmed; the grid rows carry that decoration. */
+  .key.white.root .lbl, .key.white.fifth .lbl { color: var(--piano-key-label); }
+
+  .dock-scroll { height: var(--dock-grid-h); overflow-y: auto; overflow-x: hidden; scrollbar-color: var(--border-light) var(--surface); scroll-behavior: smooth; transition: height 200ms ease-out; }
+  .dock-scroll::-webkit-scrollbar { width: 8px; }
+  .dock-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  .grid { position: relative; overflow: hidden; }
+  .row { position: absolute; left: 0; right: 0; }
+  .row.black { background: var(--piano-grid-black-row); }
+  .row.c { border-top: 1px solid var(--piano-grid-octave); }
+  .row.root { background: rgba(94,179,234,.07); } .row.fifth { background: rgba(197,138,214,.05); }
+  .row.out { background-image: repeating-linear-gradient(135deg, rgb(255 255 255 / 4.5%) 0 1px, transparent 1px 7px); }
+  .row.scale-out { background: rgba(0,0,0,.42); }
+  .lines { position: absolute; inset: 0; pointer-events: none; }
+  .grid-line { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--piano-grid-step); }
+  .grid-line.beat { background: var(--piano-grid-beat); }
+  .grid-line.bar { background: var(--piano-grid-bar); }
+  .page-band { position: absolute; top: 0; bottom: 0; width: 11px; background: var(--piano-grid-bar); opacity: .3; }
+  .loop-shade { position: absolute; top: 0; bottom: 0; background: rgba(0,0,0,.35); pointer-events: none; display: none; }
+  .grid.has-loop .loop-shade { display: block; }
+  .hl-row, .hl-col, .sel-col { position: absolute; pointer-events: none; opacity: 0; }
+  .hl-row { left: 0; right: 0; background: rgba(255,255,255,.035); }
+  .hl-col { top: 0; bottom: 0; width: var(--step-w); background: rgba(255,255,255,.035); }
+  .sel-col { top: 0; bottom: 0; width: var(--step-w); background: rgba(74,158,206,.12); box-shadow: inset 0 0 0 1px rgba(74,158,206,.5); }
+  .grid.hovering .hl-row, .grid.hovering .hl-col { opacity: 1; }
+  .sel-col.on { opacity: 1; }
+  .ghost { position: absolute; pointer-events: none; opacity: 0; border-radius: 3px; border: 1px dashed rgba(232,90,48,.8); background: rgba(232,90,48,.18); }
+  .grid.hovering.empty .ghost { opacity: 1; }
+  .notes { position: absolute; inset: 0; transition: opacity 120ms ease; }
+  .notes.fading { opacity: 0; }
+  /* A bar keeps a constant presence outline at every velocity; its label ink is chosen from the composited fill. */
+  .notes .note { position: absolute; border-radius: 3px; pointer-events: none; outline: 1px solid var(--note-presence-outline); outline-offset: -1px; display: flex; align-items: center; padding-left: 6px; font-family: var(--font-mono); font-size: 10px; font-weight: 500; color: var(--note-label-ink, var(--text)); overflow: hidden; white-space: nowrap; }
+  .note .bar-label { line-height: 1; }
+  .grid.overview .bar-label { display: none; }
+  .notes .note.playing { box-shadow: 0 0 0 2px var(--playhead), 0 0 14px rgba(255,255,255,.45);  }
+  .notes .note.dragging { opacity: .9; box-shadow: 0 0 0 1px rgba(255,255,255,.5), 0 6px 18px rgba(0,0,0,.5); }
+  .ghosts { position: absolute; inset: 0; pointer-events: none; transition: opacity 120ms ease; }
+  .ghosts .gnote { position: absolute; border-radius: 3px; border: 1px dashed var(--gc); background: color-mix(in srgb, var(--gc) 14%, transparent); }
+  .playhead { position: absolute; top: 0; bottom: 0; left: 0; width: 2px; background: var(--playhead); box-shadow: 0 0 8px rgba(255,255,255,.6); pointer-events: none; opacity: 0; z-index: 3; }
+  .wash { position: absolute; top: 0; bottom: 0; left: 0; width: var(--step-w); background: rgb(255 255 255 / 4.5%); pointer-events: none; opacity: 0; }
+  .grid.playing .playhead, .grid.playing .wash { opacity: 1; }
+  .hit { position: absolute; inset: 0; cursor: crosshair; touch-action: none; }
+  .hit.pan { touch-action: auto; cursor: all-scroll; }
+  .grid-focus { position: absolute; pointer-events: none; border: 2px solid var(--info-text); z-index: 4; width: 36px; display: none; }
+  .grid:focus-within .grid-focus { display: block; }
+  .tip { position: absolute; pointer-events: none; z-index: 4; opacity: 0; background: var(--surface-3); color: var(--text); border: 1px solid var(--border-light); border-radius: 5px; padding: 2px 7px; font-family: var(--font-mono); font-size: 10px; white-space: nowrap; transform: translate(10px, -26px); box-shadow: 0 4px 12px rgba(0,0,0,.4); }
+  .grid.hovering .tip { opacity: 1; }
+  .tip b { color: var(--accent-text); font-weight: 500; }
+  /* Status line under the body: 24px on desktop, a 16px bar.beat timeline in landscape. */
+  .editor-status { position: sticky; left: 0; margin: 0; padding: 3px 10px; font-size: 11px; color: var(--muted); background: var(--surface); min-height: 24px; }
+  .mobile-timeline { display: none; }
+  .portrait-preview { display: none; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; }
+  .portrait-preview p { color: var(--muted); }
+
+  /* ===== Notes below the mock ===== */
+  .notes-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 10px 24px; margin: 0; padding: 0; list-style: none; }
+  .notes-list li { font-size: 13px; color: var(--muted); }
+  .notes-list li b { color: var(--text); font-weight: 600; }
+  .try { margin: 0; padding-left: 18px; color: var(--muted); font-size: 13px; display: grid; gap: 4px; max-width: 72ch; }
+  .links { font-size: 13px; color: var(--muted); }
+
+  @media (max-width: 640px) { h1 { font-size: 19px; } .play-button { width: 44px; height: 44px; } }
+  @media (max-width: 640px) and (orientation: portrait) { .tracks { max-height: 70vh; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dock, .dock-left, .dock-scroll, .notes, .ghosts, .key, .play-button::before, .expand-toggle { transition: none; }
+    .step-cell.pulse, .shift-click-marker { animation: none; }
+    .dock-scroll { scroll-behavior: auto; }
+  }
+
+  /* ===== Landscape: 216px one-line row, 44px controls, and the editor as a fixed inset sheet =====
+     The mode comes from the JS display-mode decision on the root, never from a media query. */
+  :root[data-display-mode="landscape"] { --track-left-width: 216px; --dock-head-height: 88px; --dock-toolbar-height: 48px; }
+  [data-display-mode="landscape"] .tracks { max-height: calc(100dvh - 108px); }
+  [data-display-mode="landscape"] .tl-btn, [data-display-mode="landscape"] .expand-toggle { width: 44px; height: 44px; flex: none; }
+  [data-display-mode="landscape"] .line2 .velocity-toggle { display: none; }
+  [data-display-mode="landscape"] .dock.open { position: fixed; inset: 8px; width: calc(100vw - 16px); margin: 0; z-index: 20; --dock-grid-h: calc(100dvh - 126px); }
+  [data-display-mode="landscape"] .dock.open .dock-inner { min-width: 0; width: 100%; border: 1px solid #787883; border-radius: 8px; }
+  [data-display-mode="landscape"] .dock.open .dock-head { grid-template-rows: 44px 44px; gap: 0; padding: 0 6px; }
+  [data-display-mode="landscape"] .dock-head .dock-title { font-size: 12px; }
+  [data-display-mode="landscape"] .dock-head .right { gap: 4px; }
+  [data-display-mode="landscape"] .dock-head .ib:first-child { display: none; }
+  [data-display-mode="landscape"] .dock-head .track-tabs { min-width: 44px; }
+  [data-display-mode="landscape"] .dock-head .chip { padding: 0 8px; }
+  [data-display-mode="landscape"] .chip, [data-display-mode="landscape"] .dock-head .ib, [data-display-mode="landscape"] .cbtn, [data-display-mode="landscape"] .pane input, [data-display-mode="landscape"] .pane select, [data-display-mode="landscape"] .detail-controls input, [data-display-mode="landscape"] .detail-controls select { height: 44px; }
+  [data-display-mode="landscape"] .dock-head .ib, [data-display-mode="landscape"] .tool-scroll { min-width: 44px; height: 44px; }
+  [data-display-mode="landscape"] .dock-body { overflow-x: auto; }
+  [data-display-mode="landscape"] .dock-left { min-width: 84px; width: 84px; }
+  [data-display-mode="landscape"] .dock-scroll { flex: none; }
+  [data-display-mode="landscape"] .editor-status { min-height: 16px; height: 16px; line-height: 16px; padding: 0 6px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  [data-display-mode="landscape"] .editor-status .status-message { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  [data-display-mode="landscape"] .mobile-timeline { display: block; position: absolute; inset: 0; }
+  [data-display-mode="landscape"] .mobile-timeline span { position: absolute; font: 500 10px/16px var(--font-mono); color: var(--muted); }
+  [data-display-mode="landscape"] .timeline-caption { position: sticky; left: 0; width: 92px; background: var(--surface); z-index: 1; padding-left: 6px; }
+
+  /* ===== Marks legend strip (the legend and real example cells) ===== */
+  .audit-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 10px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; font-size: 12px; color: var(--muted); }
+
+  /* Row fixes: borders 2 with 3 at beat starts, lane as one row pitch, ruler one lattice slot above the rows, no closed-dock line. */
+  html[data-rowfix="on"] .step-cell.playing { border-width: 3px; }
+  html[data-rowfix="on"] .velocity-lane { height: var(--row-opt-h); margin-top: 2px; align-items: center; }
+  html[data-rowfix="on"] .velocity-lane input { height: 36px; }
+  html[data-rowfix="on"] .ruler-row { margin-bottom: 0; padding-bottom: 0; }
+  html[data-rowfix="on"] .marker-label { top: 0; line-height: 24px; }
+  html[data-rowfix="on"] .dock:not(.open) { margin-top: 0; }
+  html[data-rowfix="on"] .dock:not(.open) .dock-inner { border-top: 0; }
+  html[data-rowfix="on"] .tl-btn, html[data-rowfix="on"] .expand-toggle, html[data-rowfix="on"] .velocity-toggle { border-radius: 4px; }
+
+  /* Dock fixes: rail 20 so keys start where names start, rules outside the strips with even 8px padding,
+     one border colour, whole-row keys and whole-pixel bars (JS), grid lines in the gaps (JS), octave rule on the B|C crack. */
+  html[data-dockfix="on"] .dock { margin-top: 4px; }
+  html[data-dockfix="on"] .dock-left { grid-template-columns: 20px 1fr; }
+  html[data-dockfix="on"] .range-rail .bracket { left: 9px; width: 2px; }
+  html[data-dockfix="on"] .range-rail .bracket::before, html[data-dockfix="on"] .range-rail .bracket::after { left: -2px; width: 6px; }
+  html[data-dockfix="on"] .dock-head { height: calc(var(--dock-head-height) + 1px); padding: 8px 20px; }
+  html[data-dockfix="on"] .dock-head .right { gap: 4px; }
+  html[data-dockfix="on"] .tools-shell, html[data-dockfix="on"] .dock-tools { height: calc(var(--dock-toolbar-height) + 1px); }
+  html[data-dockfix="on"] .pane { height: var(--dock-toolbar-height); padding: 0 20px; gap: 16px; }
+  html[data-dockfix="on"] .editor-status { padding: 4px 20px; min-height: 24px; line-height: 16px; }
+  html[data-dockfix="on"] .chip, html[data-dockfix="on"] .cbtn { padding: 0 8px; }
+  html[data-dockfix="on"] .cbtn { font-weight: 500; }
+  html[data-dockfix="on"] .dock-head .ib, html[data-dockfix="on"] .cbtn, html[data-dockfix="on"] .tool-scroll, html[data-dockfix="on"] .pane input[type=number], html[data-dockfix="on"] .pane select, html[data-dockfix="on"] .detail-controls input, html[data-dockfix="on"] .detail-controls select, html[data-dockfix="on"] .rename-input { border-color: #74747f; }
+  html[data-dockfix="on"] .dock-head .ib:hover { border-color: var(--muted); }
+  html[data-dockfix="on"] .key.black { width: 58%; border-radius: 0 2px 2px 0; }
+  html[data-dockfix="on"][data-display-mode="landscape"] .key.black { width: 38px; }
+  html[data-dockfix="on"] .key { padding-right: 6px; }
+  html[data-dockfix="on"] .key .lbl { display: block; line-height: var(--pitch-row-height); }
+  html[data-dockfix="on"] .row.c { border-top: 0; border-bottom: 1px solid var(--piano-grid-octave); }
+  html[data-dockfix="on"] .notes .note, html[data-dockfix="on"] .ghosts .gnote, html[data-dockfix="on"] .ghost { border-radius: 2px; }
+  html[data-dockfix="on"] .tip { border-radius: 4px; }
+
+  /* ===== CRAP pass (Robin Williams) =====
+     Repetition: the 24px control unit; radius 4 on every control; name 13/600. Alignment: the ruler is one slot
+     above the rows; the lane is one row pitch. Proximity: 2px inside a group, 4px between groups, 8px between the
+     column and the grid. Contrast: the docked row lifts to --surface-2 with its name in accent, instead of an edge
+     the chip would hide. */
+  html[data-crap="on"] .track-left { position: sticky; }
+  html[data-crap="on"] .track-name { padding: 0; font-weight: 600; }
+  html[data-crap="on"] .track-row-wrapper.docked .track-left { background: var(--surface-2); box-shadow: 4px 0 8px -4px rgba(0,0,0,.2); }
+  html[data-crap="on"] .track-row-wrapper.docked .track-name { color: var(--accent-text); }
+  html[data-crap="on"] .tl-btn, html[data-crap="on"] .expand-toggle, html[data-crap="on"] .velocity-toggle, html[data-crap="on"] .rename-input, html[data-crap="on"] .track-name { border-radius: 4px; }
+  html[data-crap="on"] .line2 { gap: 4px; }
+  html[data-crap="on"] .line2 .group { gap: 2px; }
+  html[data-crap="on"] .velocity-lane { height: var(--row-opt-h); margin-top: 2px; align-items: center; }
+  html[data-crap="on"][data-rows^="tall"] .velocity-lane { margin-top: 3px; }
+  html[data-crap="on"] .velocity-lane input { height: 36px; }
+  html[data-crap="on"] .ruler-row { margin-bottom: 0; padding-bottom: 0; }
+  html[data-crap="on"] .marker-label { top: 0; line-height: 24px; }
+  /* The dock's rail is 12px and its strips are padded 12px, so the keys and the toolbar line up 12px in. */
+  html[data-crap="on"][data-rows^="tall"] .dock-left { grid-template-columns: 12px 1fr; }
+  html[data-crap="on"][data-rows^="tall"] .range-rail .bracket { left: 5px; }
+  html[data-crap="on"][data-rows^="tall"] .dock-head, html[data-crap="on"][data-rows^="tall"] .pane, html[data-crap="on"][data-rows^="tall"] .editor-status { padding-left: 12px; padding-right: 12px; }
+
+  /* ===== Velocity: fill (production's encoding, kept) =====
+     An active cell is the accent; a step with a volume lock below 1 carries a light wash from the bottom up to
+     its volume, so the quiet steps on a drum row stand out at a glance. The dock's bars carry the same wash. */
+  html[data-vel="fill"] .step-cell.active { background: linear-gradient(to top, var(--color-accent) calc(var(--note-velocity, 1) * 100%), var(--accent-dim) 0); }
+  html[data-vel="fill"] .notes .note { background: linear-gradient(to top, var(--color-accent) calc(var(--note-velocity, 1) * 100%), var(--accent-dim) 0); }
+
+  /* ===== The tall lattice =====
+     36 × 50 cells on a 53px pitch, the density and tessellation to preserve. Gaps are 3px both ways. */
+  html[data-rows^="tall"] { --row-opt-h: 50px; }
+  html[data-rows^="tall"] .track-row { height: 50px; padding: 0; }
+  html[data-rows^="tall"] .step-cell { height: 50px; }
+  html[data-rows^="tall"] .tracks-inner .rows, html[data-rows^="tall"] .tracks-inner { gap: 3px; }
+  html[data-rows^="tall"] .velocity-lane { margin-top: 3px; }
+  html[data-rows^="tall"] .track-left { display: flex; align-items: center; height: var(--row-opt-h); padding: 0 12px; column-gap: 4px; row-gap: 2px; }
+  html[data-rows^="tall"] .track-name { flex: 1 1 0; min-width: 0; height: 24px; padding: 0; }
+  html[data-rows^="tall"] .rename-input { flex: 1 1 0; min-width: 0; height: 24px; }
+
+  /* The control tile, "M S under the name", 231px (six cells). Left: the track (name over [M|S]). Right: the pattern
+     ([Notes|lane|tools] over [copy|clear|delete], [transpose|steps] beside). The row shows the track name only.
+     Three classes, one look each: information is bare text; state is a hollow box that fills when on; a control is a
+     solid chip. Trays touch, and the solid trays keep a 1px seam so two values never read as one. One type style in
+     every box: 11px, 600, tabular numbers. */
+  html[data-rows="tallwho"] { --track-left-width: 231px; }
+  html[data-rows="tallwho"] .track-left { display: block; position: sticky; left: 0; padding: 0; } /* sticky, as the spec's one scroller requires; still the containing block for the tile's positioned controls */
+  html[data-rows="tallwho"] .track-name { position: absolute; left: 24px; top: 0; width: 120px; height: 24px; line-height: 24px; margin: 0; padding: 0; text-align: left; white-space: nowrap; overflow: hidden; }
+  html[data-rows="tallwho"] .track-name .nm { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  html[data-rows="tallwho"] .line2 { display: contents; }
+  html[data-rows="tallwho"] .line2 .group, html[data-crap="on"][data-rows="tallwho"] .line2 .group { position: absolute; top: 0; display: inline-flex; gap: 0; }
+  html[data-rows="tallwho"] .line2 .group:nth-child(1) { left: 24px; top: 26px; }
+  html[data-rows="tallwho"] .line2 .group:nth-child(2) { left: 152px; top: 0; }
+  html[data-rows="tallwho"] .line2 .group.act-group { left: 152px; top: 26px; display: inline-flex; }
+  html[data-rows="tallwho"] .pill-tr, html[data-rows="tallwho"] .pill-steps { position: absolute; top: 26px; display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0; margin: 0; }
+  html[data-rows="tallwho"] .pill-tr { left: 100px; } html[data-rows="tallwho"] .pill-steps { left: 124px; }
+  /* one unit, one type style */
+  html[data-rows="tallwho"] .tl-btn, html[data-rows="tallwho"] .expand-toggle, html[data-rows="tallwho"] .velocity-toggle, html[data-rows="tallwho"] .tools-toggle, html[data-rows="tallwho"] .pill-tr, html[data-rows="tallwho"] .pill-steps { box-sizing: border-box; width: 24px; height: 24px; padding: 0; margin: 0; border-radius: 0; font: 600 11px/1 var(--font-ui); font-variant-numeric: tabular-nums; letter-spacing: 0; display: inline-flex; align-items: center; justify-content: center; }
+  html[data-rows="tallwho"] .tl-btn svg, html[data-rows="tallwho"] .expand-toggle svg, html[data-rows="tallwho"] .velocity-toggle svg, html[data-rows="tallwho"] .tools-toggle svg { width: 16px; height: 16px; display: block; }
+  /* state: hollow, fills when on */
+  html[data-rows="tallwho"] .mute-button, html[data-rows="tallwho"] .solo-button, html[data-rows="tallwho"] .expand-toggle, html[data-rows="tallwho"] .velocity-toggle, html[data-rows="tallwho"] .tools-toggle { border: 1px solid #555; background: transparent; color: var(--muted); }
+  html[data-rows="tallwho"] .solo-button, html[data-rows="tallwho"] .velocity-toggle, html[data-rows="tallwho"] .tools-toggle { border-left: 0; }
+  html[data-rows="tallwho"] .mute-button, html[data-rows="tallwho"] .expand-toggle { border-radius: 4px 0 0 4px; }
+  html[data-rows="tallwho"] .solo-button, html[data-rows="tallwho"] .tools-toggle { border-radius: 0 4px 4px 0; }
+  html[data-rows="tallwho"] .mute-button.active { background: #e74c3c; border-color: #e74c3c; color: #121212; }
+  html[data-rows="tallwho"] .solo-button.active { background: #f1c40f; border-color: #f1c40f; color: #121212; }
+  html[data-rows="tallwho"] .expand-toggle.active, html[data-rows="tallwho"] .velocity-toggle[aria-expanded="true"], html[data-rows="tallwho"] .tools-toggle.active { background: var(--on-bg); border-color: var(--on-line); color: var(--on-ink); box-shadow: -1px 0 0 var(--on-line); }
+  html[data-rows="tallwho"] .expand-toggle.active { box-shadow: none; }
+  html[data-rows="tallwho"] .kind-drum .expand-toggle { color: transparent; }
+  html[data-rows="tallwho"] .kind-drum .expand-toggle svg { visibility: hidden; }
+  /* control: solid chip, 1px seam between segments */
+  html[data-rows="tallwho"] .pill-tr, html[data-rows="tallwho"] .pill-steps, html[data-rows="tallwho"] .act-group .tl-btn { border: 0; background: #3a3a3a; color: var(--text); }
+  html[data-rows="tallwho"] .pill-steps, html[data-rows="tallwho"] .act-group .tl-btn + .tl-btn { box-shadow: inset 1px 0 0 var(--surface); }
+  html[data-rows="tallwho"] .pill-tr, html[data-rows="tallwho"] .act-group .tl-btn:first-child { border-radius: 4px 0 0 4px; }
+  html[data-rows="tallwho"] .pill-steps, html[data-rows="tallwho"] .act-group .tl-btn:last-child { border-radius: 0 4px 4px 0; }
+  html[data-rows="tallwho"] .act-group .tl-btn.copy-source { background: #3a3a3a; color: var(--accent-text); }
+  html[data-rows="tallwho"] .act-group .tl-btn.paste { color: #5eb3ea; }
+  html[data-rows="tallwho"] .act-group .tl-btn:disabled { opacity: .4; cursor: default; }
+
+  /* The chip: a 6px straight line in the track's colour down the row's left edge, full height, with the drag
+     grip inside it as three dark dots. It is the drag handle. It never changes with mute, solo or docking.
+     The same mark is used on the dock's track tabs. */
+  html[data-rows^="tall"] .track-left { position: sticky; padding-left: 24px; border-radius: 0 4px 4px 0; }
+  html[data-rows^="tall"] .cat-chip { display: block; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; border-radius: 0; background: var(--cat); cursor: grab; }
+  html[data-rows^="tall"] .cat-chip::before { content: ''; position: absolute; left: 2px; top: 50%; width: 4px; height: 12px; margin-top: -6px; background-image: radial-gradient(circle at 1px 2px, rgba(0,0,0,.6) 1px, transparent 1.3px); background-size: 4px 4px; }
+  /* Legend for the signals a cell carries. The badge swatch is hidden: it was caught by the tile's old .badge hide
+     rule, and this cleanup keeps the page pixel-identical. Delete this rule to show it. */
+  .audit-legend { flex: 0 0 100%; display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 12px; color: var(--muted); padding-top: 2px; }
+  .audit-legend span { display: inline-flex; align-items: center; gap: 6px; margin-left: 6px; }
+  .audit-legend i { display: inline-block; width: 16px; height: 16px; border-radius: 3px; background: var(--color-accent); border: 2px solid var(--accent-hi); position: relative; }
+  .audit-legend i.level { background: linear-gradient(to top, var(--color-accent) 50%, var(--accent-dim) 0); }
+  .audit-legend i.badge::after { content: ''; position: absolute; top: 1px; right: 1px; width: 7px; height: 4px; border-radius: 1px; background: rgba(0,0,0,.6); }
+  .audit-legend i.bridge { border-radius: 0 3px 3px 0; border-left-color: transparent; } .audit-legend i.bridge::before { content: ''; position: absolute; left: -7px; top: -2px; bottom: -2px; width: 7px; background: var(--color-accent); }
+  .audit-legend i.fold::after { content: ''; position: absolute; right: -2px; bottom: -2px; width: 6px; height: 6px; background: linear-gradient(135deg, transparent 50%, rgba(0,0,0,.6) 50%); }
+  .audit-legend i.kept { background: var(--surface-2); border: 2px dashed color-mix(in srgb, var(--color-accent) 55%, transparent); }
+  /* Example cells: real .step-cell elements on the row lattice, decorated by the same code as the rows, so the strip
+     shows exactly how an attack, the ties that carry it, a second attack and a quiet step read in the rows. */
+  .legend-demo { flex: 0 0 100%; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 4px 0 2px; }
+  .legend-demo .step-grid { flex: none; }
+  .legend-demo .step-cell { cursor: default; }
+  .legend-demo .cap { display: flex; gap: 3px; font-family: var(--font-mono); font-size: 10px; color: var(--muted); }
+  .legend-demo .cap span { flex: none; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-top: 1px solid var(--border-light); padding-top: 2px; }
+  .legend-demo .ex { display: flex; flex-direction: column; gap: 3px; }
+  .legend-demo .ex > b { font-size: 11px; font-weight: 500; color: var(--muted); }
+  .legend-demo .txt { font-size: 12px; color: var(--muted); max-width: 46ch; }
+
+  /* ===== Portrait: consumption only ===== */
+  [data-display-mode="portrait"] .sequencer { display: none; }
+  [data-display-mode="portrait"] .portrait-preview { display: block; }
+
+  /* One button language for the whole page, the tile's three classes (dock, transport and panes included).
+     Command or value: a solid chip, no outline. State or view selection: a hollow 1px box that fills when on (views and
+     toggles cyan, mute red, solo yellow). Information: bare text. Heights: 24px inside rows, 32px in toolbars; one 4px
+     radius; buttons 12px/500, labels 11px/500 upper case. */
+  html[data-ui="one"] .cbtn, html[data-ui="one"] .dock-head .ib, html[data-ui="one"] .pill, html[data-ui="one"] .pane select, html[data-ui="one"] .pane input[type=number], html[data-ui="one"] .detail-controls select { border: 0; border-radius: 4px; background: #3a3a3a; color: var(--text); font: 500 12px/1 var(--font-ui); font-variant-numeric: tabular-nums; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+  html[data-ui="one"] .cbtn:hover:not(:disabled), html[data-ui="one"] .dock-head .ib:hover, html[data-ui="one"] .pill:hover:not(:disabled) { background: #454545; color: var(--text); }
+  html[data-ui="one"] .cbtn svg, html[data-ui="one"] .dock-head .ib svg, html[data-ui="one"] .pill svg, html[data-ui="one"] .play-button svg { width: 16px; height: 16px; flex: none; }
+  html[data-ui="one"] .play-button svg { width: 22px; height: 22px; }
+  html[data-ui="one"] .cbtn[aria-pressed], html[data-ui="one"] .cbtn[aria-expanded], html[data-ui="one"] .pill[aria-pressed], html[data-ui="one"] .chip { background: transparent; border: 1px solid #555; color: var(--muted); }
+  html[data-ui="one"] .cbtn[aria-pressed="true"], html[data-ui="one"] .cbtn[aria-expanded="true"], html[data-ui="one"] .pill[aria-pressed="true"], html[data-ui="one"] .chip.active { background: var(--on-bg); border-color: var(--on-line); color: var(--on-ink); }
+  html[data-ui="one"] .cbtn.st-mute[aria-pressed="true"] { background: #e74c3c; border-color: #e74c3c; color: #fff; }
+  html[data-ui="one"] .cbtn.st-solo[aria-pressed="true"] { background: #f1c40f; border-color: #f1c40f; color: #121212; }
+  html[data-ui="one"] .cbtn.value { background: transparent; border: 0; color: var(--text); padding: 0 6px; min-width: 32px; }
+  html[data-ui="one"] .chip:hover:not(.active) { color: var(--text); border-color: #777; background: transparent; }
+  html[data-ui="one"] .track-tabs { display: flex; gap: 4px; }
+  html[data-ui="one"] .pane-tabs { display: inline-flex; gap: 0; }
+  html[data-ui="one"] .pane-tabs .chip { border-radius: 0; } html[data-ui="one"] .pane-tabs .chip + .chip { border-left-width: 0; }
+  html[data-ui="one"] .pane-tabs .chip:first-child { border-radius: 4px 0 0 4px; } html[data-ui="one"] .pane-tabs .chip:last-child { border-radius: 0 4px 4px 0; }
+  html[data-ui="one"] .pane-tabs .chip.active + .chip { box-shadow: -1px 0 0 var(--on-line); }
+  html[data-ui="one"] .tray { display: inline-flex; gap: 0; }
+  html[data-ui="one"] .tray > .cbtn { border-radius: 0; }
+  html[data-ui="one"] .tray > .cbtn:first-child { border-radius: 4px 0 0 4px; } html[data-ui="one"] .tray > .cbtn:last-child { border-radius: 0 4px 4px 0; } html[data-ui="one"] .tray > .cbtn:only-child { border-radius: 4px; }
+  html[data-ui="one"] .tray > .cbtn:not([aria-pressed]):not([aria-expanded]):not(.value) + .cbtn:not([aria-pressed]):not([aria-expanded]):not(.value) { box-shadow: inset 1px 0 0 var(--surface); }
+  html[data-ui="one"] .tray > .cbtn[aria-pressed] + .cbtn[aria-pressed] { border-left-width: 0; }
+  html[data-ui="one"] .pane .k, html[data-ui="one"] .bpm span { font: 500 11px/1 var(--font-ui); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  html[data-ui="one"] .pane .value, html[data-ui="one"] .pane input, html[data-ui="one"] .pane select, html[data-ui="one"] .bpm b { font-family: var(--font-ui); }
+  html[data-ui="one"] .bpm b { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  html[data-ui="one"] .grid-gutter { position: absolute; top: 0; bottom: 0; width: 3px; background: rgb(0 0 0 / 38%); }
+
+  /* Landscape row, as production: M | S | name with a chevron, 44px targets, nothing else in the row. A tap on the
+     name opens the track's editor (production's drawer override); Copy, Clear and Delete live in its Track pane.
+     216 = 4 + M 44 + 4 + S 44 + 4 + name 112 + 4. These rules beat the desktop tile's positioned layout. */
+  html[data-display-mode="landscape"][data-rows="tallwho"] .track-row { height: 48px; padding: 2px 0; }
+  html[data-display-mode="landscape"][data-rows="tallwho"] .step-cell { height: 44px; }
+  html[data-display-mode="landscape"] .tracks-inner .rows { gap: 2px; } /* 48px row on the spec's 50px pitch */
+  html[data-display-mode="landscape"][data-rows="tallwho"] .track-left { display: flex; align-items: center; gap: 4px; height: 44px; padding: 0 4px; }
+  html[data-display-mode="landscape"][data-rows="tallwho"] .track-left :is(.track-name, .line2 .group, .pill-tr, .pill-steps) { position: static; }
+  html[data-display-mode="landscape"][data-rows="tallwho"] .track-left :is(.pill-tr, .pill-steps, .act-group, .line2 .group:nth-child(2)) { display: none; }
+  html[data-display-mode="landscape"][data-rows="tallwho"] .track-left .line2 .group:nth-child(1) { order: 0; }
+  html[data-display-mode="landscape"][data-rows="tallwho"] .track-left .tl-btn { width: 44px; height: 44px; font-size: 12px; }
+  html[data-display-mode="landscape"][data-rows="tallwho"] .track-left .track-name { order: 1; flex: 0 0 112px; width: 112px; height: 44px; line-height: 44px; display: flex; align-items: center; gap: 4px; }
+  html[data-display-mode="landscape"][data-rows="tallwho"] .track-left .track-name .nm { flex: 0 1 auto; min-width: 0; }
+  .track-name .chev { display: none; }
+  html[data-display-mode="landscape"] .track-name .chev { display: inline-flex; flex: none; color: var(--muted); }
+  html[data-display-mode="landscape"] .track-name .chev svg { width: 14px; height: 14px; }
+  /* The marks legend wraps and scrolls inside itself so it never widens the page on a phone. */
+  .audit-bar .legend-demo { max-width: 100%; overflow-x: auto; }
+
+  /* ===== Piano roll, CRAP pass =====
+     Contrast: a dark keyboard, so the notes are the brightest marks in the dock (the ivory keys out-shouted them).
+     Repetition: no hue without a meaning (root rows neutral, fifths untinted, range bracket grey; blue stays
+     selection); one dashed meaning (a lock kept on an off step), so ghosts are solid; bars share the cells' 4px
+     corners and accent-hi edge; one mono style, 10px/600, for key labels, bar labels and cell badges.
+     Alignment: the dock's content edge is the rows' content edge, x24 inside the column (tabs, toolbar, keys, status).
+     Proximity: one header row; the context line moves into the status strip; the toolbar is four labelled groups
+     whose related controls touch. */
+  :root { --piano-key-surface: #1a1a1a; --piano-key-white: #2c2c2c; --piano-key-white-hover: #363636; --piano-key-black: #121212; --piano-key-black-hover: #1f1f1f; --piano-key-label: var(--muted); --dock-head-height: 48px; }
+  :root[data-display-mode="landscape"] { --dock-head-height: 44px; }
+  .key.black { color: var(--muted); }
+  .key, .notes .note, .step-cell .pchip { font-family: var(--font-mono); font-size: 10px; font-weight: 600; }
+  .row.root { background: rgb(255 255 255 / 4%); } .row.fifth { background: transparent; }
+  .range-rail .bracket, html[data-dockfix="on"] .range-rail .bracket, html[data-crap="on"][data-rows^="tall"] .range-rail .bracket { left: 11px; width: 2px; background: rgb(255 255 255 / 30%); }
+  .range-rail .bracket::before, .range-rail .bracket::after { background: rgb(255 255 255 / 45%); }
+  html[data-dockfix="on"] .ghosts .gnote, .ghosts .gnote { border-style: solid; border-radius: 4px; }
+  .cbtn.ghost-toggle i, html[data-ui="one"] .cbtn.ghost-toggle i { border-style: solid; }
+  html[data-dockfix="on"] .notes .note { outline-color: var(--accent-hi); }
+  html[data-crap="on"][data-rows^="tall"] .dock-left { grid-template-columns: 24px 1fr; }
+  html[data-crap="on"][data-rows^="tall"] .dock-head, html[data-crap="on"][data-rows^="tall"] .pane, html[data-crap="on"][data-rows^="tall"] .editor-status { padding-left: 24px; }
+  html[data-dockfix="on"] .dock-head { grid-template-columns: minmax(0, 1fr) auto auto; grid-template-rows: 32px; column-gap: 16px; }
+  .dock-head .track-tabs { grid-column: 1; grid-row: 1; } .dock-head .pane-tabs { grid-column: 2; grid-row: 1; } html[data-dockfix="on"] .dock-head .right { grid-column: 3; grid-row: 1; }
+  [data-display-mode="landscape"] .dock.open .dock-head { grid-template-rows: 44px; }
+  .editor-status .dock-title { display: inline; margin-right: 12px; color: var(--text); font-size: 11px; }
+  .editor-status .dock-title:empty { display: none; }
+  [data-display-mode="landscape"] .editor-status .dock-title { display: none; }
+  html[data-dockfix="on"] .pane .rowc .tray + .tray, html[data-dockfix="on"] .pane .rowc > .cbtn + .tray, html[data-dockfix="on"] .pane .rowc > .tray + .cbtn { margin-left: 0; }
+  .pane .rowc .value { color: var(--text); }
+</style>
+</head>
+<body>
+
+<div class="page-wrap">
+  <div>
+    <div class="eyebrow">Keyboardia · Pitch panel · Editor dock prototype</div>
+    <h1>Piano roll dock</h1>
+    <p class="lede">The sequencer with the proposed editor dock under the grid. Each row's control tile puts the track on the left (name over M and S) and the pattern on the right. Press the keyboard icon on Piano, Bass or Duo to open Notes; press the gear, the transpose or the step count to open Track. Click a name to hear its instrument, as in the app, and double-click it to rename; hover it for the sample ID, and the instrument once the track is renamed. Hold or Shift+click a step to open Step. Rows stay contiguous; the dock opens at 18px per semitone and scrolls to the track's notes. Note editing and playback use a small synth; step-count, envelope and pattern-tool integration are labelled, disabled previews. Copy/Paste, Clear and Delete are working prototype actions in this mock. Scale selection and reorder are previews; portrait shows a listening placeholder. The dock starts open here so the page shows its working state; in the app it opens only on request. The pattern is the owner's session <em>Piano in A Minor Pentatonic</em> plus a Bass demonstration row with every kind of lock.</p>
+  </div>
+
+  <section class="portrait-preview" aria-label="Portrait listening preview"><h2>Keyboardia · listening view</h2><p>Editing is available in landscape. Rotate your phone to edit the pattern.</p><button class="cbtn" id="portraitPlay" type="button">Play preview</button></section>
+  <section class="audit-bar" aria-label="Marks in the cells">
+    <span class="audit-legend"><span><i class="level"></i> level: the volume, accent up to it</span><span><i class="badge"></i> badge: pitch, ↑7 or ↓5, on the note's first cell</span><span><i class="bridge"></i> bridge: a tie, one shape across the gap</span><span><i class="fold"></i> fold: an envelope lock</span><span><i class="kept"></i> dashed: a lock kept on a step that is off</span></span>
+    <span class="legend-demo" id="legendDemo" aria-label="Example cells"></span>
+  </section>
+  <section class="sequencer" id="sequencer" aria-label="Sequencer">
+    <div class="transport">
+      <button class="play-button" id="playBtn" type="button" aria-label="Play"><span id="playIcon">&#9654;</span></button>
+      <div class="bpm"><b>96</b><span>BPM</span></div>
+      <button class="pill" type="button" disabled title="Integration preview: scale selection uses the real app">Scale: C major <span class="caret">&#9660;</span></button>
+      <button class="pill icon" id="scaleBtn" type="button" aria-pressed="false" aria-label="Constrain notes to selected scale" title="Lock scale (constrain to scale notes only)"></button>
+      <span class="spacer"></span>
+      <span class="copy-status" id="copyStatus" role="status" aria-live="polite"></span>
+      <span class="session-name" id="sessionName">Piano in A Minor Pentatonic</span>
+    </div>
+    <div class="tracks" id="tracks">
+      <div class="tracks-inner" id="inner"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>What the prototype demonstrates</h2>
+    <ul class="notes-list">
+      <li><b>Rows stay contiguous.</b> No panel ever opens between rows. The dock takes its space from the bottom of the scroller and pins there while the tracks scroll above it.</li>
+      <li><b>One scroller, one lattice.</b> The ruler, every row and the dock share the horizontal scroll and the same 36px columns with 3px gutters, so step 9 is the same x everywhere. Rows are 50px on a 53px pitch.</li>
+      <li><b>The control tile, 231px.</b> Left, the track: name over [M|S]. Right, the pattern: [Notes|Lane|Tools] over [Copy|Clear|Delete], with [transpose|steps] beside. Every control is visible on 24px targets.</li>
+      <li><b>One button language.</b> Commands and values are solid chips; state and view selection are hollow boxes that fill when on; information is bare text. The tile, the dock, the panes and the transport all follow it.</li>
+      <li><b>Icons from production's system.</b> Lucide paths at 16px with a 2px stroke on a 24px grid; Notes and Lane are drawn to the same rules.</li>
+      <li><b>Row and dock are tied.</b> The docked tile lifts and its name turns accent; its Notes or Tools box fills cyan; the dock's tab for that track is selected and carries the same colour strip.</li>
+      <li><b>Switching is a crossfade, not a layout change.</b> Open another track's Notes or tab: notes fade over 120ms, ghosts swap, the pitch scroll eases to the new notes. Nothing above moves.</li>
+      <li><b>Ghost notes answer "two rolls at once".</b> Other melodic tracks are drawn dashed in their category colour. Toggle them in the Notes pane.</li>
+      <li><b>Three panes as one toolbar, one grid, two heights.</b> Notes, Step and Track swap the toolbar under the dock header. Track holds transpose, the velocity lane, mute and solo, the pattern actions and rename. The Tall and Compact button switches the detents.</li>
+      <li><b>Marks in the cells.</b> A step's fill rises to its volume; a corner badge gives a pitch lock's amount; a tie is one shape across the gap; a fold marks an envelope lock; a dashed cell keeps a lock on a step that is off.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Try it</h2>
+    <ol class="try">
+      <li>Press Play. Playheads run on the ruler, the cells and the dock from one clock.</li>
+      <li>Press the keyboard icon on Duo and watch the crossfade and the docked state move. Press it on Piano to come back.</li>
+      <li>Drag across empty dock cells to paint, drag a bar up or down to re-pitch, drag its right edge to lengthen it. The row above updates on the same frame.</li>
+      <li>Shift+click a Piano cell. The dock switches to the Step pane for that step; change its pitch or tie there.</li>
+      <li>Press a row's gear to open Track and change transpose. Every bar shifts, and the row's transpose chip follows.</li>
+      <li>Switch to Tall. Press the scale lock beside the scale and drop a note on a dimmed row. Press Escape to close the dock.</li>
+    </ol>
+    <p class="links">Companion pages: the ranked layout research with the two-rolls test, and the design brief with the layer stack, storyboard and roadmap impact. In the repository both live under <code>specs/</code>.</p>
+  </section>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  const STEPS = 32, STEP_W = 36, GAP = 3, PITCH = STEP_W + GAP;
+  const MIDI_MAX = 108, MIDI_MIN = 12; // C8 .. C0: transpose +/-24 plus pitch lock +/-24
+  const PAGE_STEPS = 16, PAGE_GAP = 8;
+  const stepX = step => step * PITCH + Math.floor(step / PAGE_STEPS) * PAGE_GAP;
+  const cellRight = step => stepX(step) + STEP_W;
+  const spanWidth = (start, len) => cellRight(start + len - 1) - stepX(start);
+  const GRID_WIDTH = cellRight(STEPS - 1);
+  const xToIndex = x => { let i = STEPS - 1; while (i > 0 && x < stepX(i)) i--; return i; };
+  const playheadX = step => stepX(Math.floor(step)) + (step % 1) * PITCH;
+  const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+  const ROWS = MIDI_MAX - MIDI_MIN + 1, BASE_MIDI = 60;
+  let H = 18;
+  const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+  const BLACK = new Set([1,3,6,8,10]), MAJOR = new Set([0,2,4,5,7,9,11]);
+  const BPM = 96, SPB = 60 / BPM / 4, MIN_LOOP_LENGTH = 2;
+  const isBlack = m => BLACK.has(((m % 12) + 12) % 12);
+  const pc = m => ((m % 12) + 12) % 12;
+  const noteName = m => NOTE_NAMES[pc(m)] + (Math.floor(m / 12) - 1);
+  // Icons follow production's icon system (specs/ICON-SYSTEM.md): Lucide's 24px grid, 2px stroke, round caps and joins,
+  // drawn at 16px. Tools, Copy, Paste, Clear and Delete are Lucide 1.25.0 paths (settings, copy, clipboard-paste,
+  // eraser, trash-2; ISC licence). Notes and Lane have no Lucide equivalent, so they are drawn to the same rules.
+  const LSVG = body => '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + body + '</svg>';
+  const ICON = {
+    // Transport and dock glyphs, Lucide 1.25.0 (play and square filled in the transport, as production does).
+    play: LSVG("<path d=\"M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z\"/>").replace('fill="none"','fill="currentColor"'),
+    stop: LSVG("<rect width=\"18\" height=\"18\" x=\"3\" y=\"3\" rx=\"2\"/>").replace('fill="none"','fill="currentColor"'),
+    lock: LSVG("<rect width=\"18\" height=\"11\" x=\"3\" y=\"11\" rx=\"2\" ry=\"2\"/><path d=\"M7 11V7a5 5 0 0 1 10 0v4\"/>"), lockOpen: LSVG("<rect width=\"18\" height=\"11\" x=\"3\" y=\"11\" rx=\"2\" ry=\"2\"/><path d=\"M7 11V7a5 5 0 0 1 9.9-1\"/>"),
+    chevronDown: LSVG("<path d=\"m6 9 6 6 6-6\"/>"), chevronUp: LSVG("<path d=\"m18 15-6-6-6 6\"/>"), x: LSVG("<path d=\"M18 6 6 18\"/><path d=\"m6 6 12 12\"/>"), minus: LSVG("<path d=\"M5 12h14\"/>"), plus: LSVG("<path d=\"M5 12h14\"/><path d=\"M12 5v14\"/>"),
+    // Notes: a keyboard on Lucide's keyboard proportions (20 × 14): two black keys as narrow outlined keys, white-key
+    // joins below them. Its weight matches Lucide's own piano icon.
+    keys: LSVG('<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M7.5 5v6a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1V5M13.5 5v6a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1V5M9 12v7M15 12v7"/>'),
+    // Lane: four rising bars, centred on the grid (x 4.5 to 19.5, y 4 to 20).
+    lane: LSVG('<path d="M4.5 20v-4M9.5 20v-8M14.5 20V8M19.5 20V4"/>'),
+    gear: LSVG("<path d=\"M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/>"),
+    copy: LSVG("<rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\"/><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\"/>"),
+    paste: LSVG("<path d=\"M11 14h10\"/><path d=\"M16 4h2a2 2 0 0 1 2 2v1.344\"/><path d=\"m17 18 4-4-4-4\"/><path d=\"M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 1.793-1.113\"/><rect x=\"8\" y=\"2\" width=\"8\" height=\"4\" rx=\"1\"/>"),
+    clear: LSVG("<path d=\"M21 21H8a2 2 0 0 1-1.42-.587l-3.994-3.999a2 2 0 0 1 0-2.828l10-10a2 2 0 0 1 2.829 0l5.999 6a2 2 0 0 1 0 2.828L12.834 21\"/><path d=\"m5.082 11.09 8.828 8.828\"/>"),
+    bin: LSVG("<path d=\"M10 11v6\"/><path d=\"M14 11v6\"/><path d=\"M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6\"/><path d=\"M3 6h18\"/><path d=\"M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2\"/>"),
+  };
+
+  const el = (cls, parent, tag) => { const d = document.createElement(tag || 'div'); if (cls) d.className = cls; if (parent) parent.appendChild(d); return d; };
+  const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ---------- tracks: steps + parameter locks, as in the app ----------
+  function mk(id, name, kind, inst, cat, transpose, range) {
+    return { id, name, kind, inst, cat, transpose: transpose || 0, range, steps: new Array(STEPS).fill(false), locks: new Array(STEPS).fill(null), pattern: null, bars: [], defaultVelocity: 1 };
+  }
+  // Seeded from the owner's session "Piano in A Minor Pentatonic" (keyboardia.dev/s/630cd593…), 96 BPM, 16 steps used
+  // of 128; the 16-step pattern is repeated on page 2 so the page gap has something to show.
+  const piano = mk('piano', 'Piano', 'melodic', 'Piano', 'var(--cat-keys)', 0, { min: 21, max: 108, optMin: 36, optMax: 96 });
+  const akick = mk('akick', 'Ac. Kick', 'drum', 'Ac. Kick', 'var(--cat-drums)');
+  const snare = mk('snare', 'Brush Snare', 'drum', 'Brush Snare', 'var(--cat-drums)');
+  const clap = mk('clap', 'Clap', 'drum', 'Clap', 'var(--cat-drums)');
+  const duo = mk('duo', 'Duo', 'melodic', 'Duo', 'var(--cat-leads)', 0, { min: 36, max: 96, optMin: 48, optMax: 84 });
+  // Bass is not in the session: it is a demonstration row with every kind of lock, so the marks can be compared on
+  // both lattices in one view. Held notes (ties), volumes from 30% to 80%, an envelope lock, and a lock kept on an
+  // off step.
+  const bass = mk('bass', 'Bass', 'melodic', 'Sub Bass', 'var(--cat-bass)', 0, { min: 24, max: 84, optMin: 28, optMax: 60 });
+  // Sample ids and names follow production's catalogue (shared/instrument-catalog.ts). Bass is the one renamed track.
+  piano.sid = 'sampled:piano'; bass.sid = 'advanced:sub-bass'; akick.sid = 'sampled:acoustic-kick'; snare.sid = 'sampled:brushes-snare'; clap.sid = 'clap'; duo.sid = 'tone:duo-lead';
+  piano.voice = 'piano'; duo.voice = 'lead'; bass.voice = 'lead'; akick.voice = 'kick'; snare.voice = 'snare'; clap.voice = 'clap';
+  piano.gain = 1; akick.gain = 1; snare.gain = 1; clap.gain = 0.53; duo.gain = 0.2; bass.gain = 0.3;
+  const SEED = {
+    piano: { on: [0, 1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15], locks: {"1": {"pitch": -24}, "4": {"pitch": -12}, "5": {"pitch": -12}, "6": {"pitch": 12}, "7": {"pitch": -5}, "8": {"pitch": -12}, "9": {"pitch": -12}, "11": {"pitch": -17}, "12": {"pitch": -5}, "14": {"pitch": 7}, "15": {"pitch": -5}} },
+    akick: { on: [0, 2, 3, 5, 7, 8, 10], locks: {"8": {"volume": 0.5}} },
+    snare: { on: [1, 3, 4, 6, 8, 9, 11], locks: {"9": {"volume": 0.5}} },
+    clap: { on: [1, 5, 6], locks: {} },
+    duo: { on: [0, 2, 3, 5, 7, 8, 10], locks: {"8": {"volume": 0.5}} },
+    bass: { on: [0, 1, 2, 3, 5, 6, 7, 8, 9, 10, 12, 14, 15], locks: {"1": {"tie": true}, "2": {"tie": true}, "3": {"pitch": 7, "volume": 0.6}, "5": {"pitch": -5}, "6": {"tie": true}, "7": {"volume": 0.4}, "8": {"pitch": 12, "volume": 0.3}, "9": {"tie": true}, "10": {"tie": true}, "12": {"attack": 0.2}, "13": {"pitch": -12}, "14": {"pitch": 3, "volume": 0.8}, "15": {"tie": true}} },
+  };
+  for (const t of [piano, bass, akick, snare, clap, duo]) {
+    const sd = SEED[t.id];
+    for (const page of [0, 16]) {
+      sd.on.forEach(i => { t.steps[i + page] = true; });
+      Object.entries(sd.locks).forEach(([i, l]) => { t.locks[Number(i) + page] = Object.assign({}, l); });
+    }
+    t.pattern = t.steps;
+    if (t.kind === 'drum') t.range = { min: 12, max: 108, optMin: 36, optMax: 84 };
+  }
+  const tracks = [piano, bass, akick, snare, clap, duo];
+  { const sn = document.getElementById('sessionName'); if (sn) sn.textContent = 'Piano in A Minor Pentatonic · ' + tracks.length + ' tracks'; }
+  const melodic = tracks.filter(t => t.kind === 'melodic');
+
+  // A continuation inherits the attack's pitch and volume; its own locks do not sound.
+  function attackStep(t, i) {
+    let head = i;
+    for (let n = 0; n < STEPS - 1; n++) {
+      const previous = (head - 1 + STEPS) % STEPS;
+      if (!t.steps[head] || !t.locks[head]?.tie || !t.steps[previous]) break;
+      head = previous;
+    }
+    return head;
+  }
+  const stepMidi = (t, i) => t.steps[i] ? BASE_MIDI + t.transpose + (t.locks[attackStep(t, i)]?.pitch ?? 0) : null;
+  const stepVel = (t, i) => t.locks[attackStep(t, i)]?.volume ?? 1;
+  function computeBars(t) {
+    const bars = []; let cur = null;
+    for (let i = 0; i < STEPS; i++) {
+      if (!t.steps[i]) { cur = null; continue; }
+      if (cur && t.locks[i] && t.locks[i].tie) { cur.len++; continue; }
+      cur = { start: i, len: 1, midi: stepMidi(t, i), vel: stepVel(t, i) }; bars.push(cur);
+    }
+    t.bars = bars; return bars;
+  }
+  melodic.forEach(computeBars);
+  const barAt = (t, step, midi) => t.bars.find(b => b.midi === midi && step >= b.start && step < b.start + b.len);
+  let scaleLocked = false;
+  const inScale = m => !scaleLocked || MAJOR.has(pc(m));
+  function editableMidi(t, midi) {
+    const min = BASE_MIDI + t.transpose - 24, max = BASE_MIDI + t.transpose + 24;
+    if (!Number.isInteger(midi) || midi < min || midi > max) return null;
+    if (inScale(midi)) return midi;
+    for (let d = 1; d < 12; d++) {
+      if (midi - d >= min && MAJOR.has(pc(midi - d))) return midi - d;
+      if (midi + d <= max && MAJOR.has(pc(midi + d))) return midi + d;
+    }
+    return midi;
+  }
+  function placeNote(t, step, midi, vel) {
+    const target = editableMidi(t, midi);
+    if (target === null) return;
+    t.steps[step] = true;
+    const volume = vel == null ? t.defaultVelocity : vel;
+    const lock = Object.assign({}, t.locks[step]), pitch = target - BASE_MIDI - t.transpose;
+    t.tieOrigins?.delete(step);
+    if(lock.tie)lock.tie=false; // Explicit placement creates an attack at the previewed pitch.
+    if (pitch !== 0) lock.pitch = pitch; else delete lock.pitch;
+    if (lock.volume == null && volume !== 1) lock.volume = volume;
+    t.locks[step] = Object.keys(lock).length ? lock : null;
+  }
+  function clearBar(t, b) { for (let i = b.start; i < b.start + b.len; i++) t.steps[i] = false; }
+  let loop = null;
+
+  // ---------- audio ----------
+  let ac = null, master = null, noiseBuf = null;
+  function ensureAudio() {
+    if (!ac) {
+      ac = new (window.AudioContext || window.webkitAudioContext)();
+      master = ac.createGain(); master.gain.value = 0.24;
+      const comp = ac.createDynamicsCompressor(); comp.threshold.value = -16; master.connect(comp); comp.connect(ac.destination);
+      noiseBuf = ac.createBuffer(1, ac.sampleRate * 0.1, ac.sampleRate);
+      const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    if (ac.state === 'suspended') ac.resume();
+  }
+  function playVoice(t, midi, vel, when, dur) {
+    if (vel <= 0) return;
+    const f = 440 * Math.pow(2, (midi - 69) / 12), isBass = t.voice === 'lead'; vel = vel * (t.gain ?? 1);
+    const o1 = ac.createOscillator(); o1.type = isBass ? 'sine' : 'triangle'; o1.frequency.value = f;
+    const o2 = ac.createOscillator(); o2.type = isBass ? 'triangle' : 'sine'; o2.frequency.value = isBass ? f : f * 2; o2.detune.value = 4;
+    const g2 = ac.createGain(); g2.gain.value = isBass ? 0.5 : 0.3;
+    const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = isBass ? 500 + vel * 600 : 1400 + vel * 3200; lp.Q.value = 0.7;
+    const g = ac.createGain(); const peak = vel * (isBass ? 1.3 : 1);
+    g.gain.setValueAtTime(0.0001, when); g.gain.exponentialRampToValueAtTime(peak, when + 0.008);
+    g.gain.exponentialRampToValueAtTime(Math.max(peak * 0.55, 0.0005), when + 0.16); g.gain.setTargetAtTime(0.0001, when + dur, 0.035);
+    o1.connect(lp); o2.connect(g2); g2.connect(lp); lp.connect(g); g.connect(master);
+    o1.start(when); o2.start(when); o1.stop(when + dur + 0.4); o2.stop(when + dur + 0.4);
+  }
+  function playKick(when, vel = 1, midi = 60) { if (vel <= 0) return; const ratio = Math.pow(2, (midi - 60) / 12); const o = ac.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(150 * ratio, when); o.frequency.exponentialRampToValueAtTime(45 * ratio, when + 0.12); const g = ac.createGain(); g.gain.setValueAtTime(0.9 * vel, when); g.gain.exponentialRampToValueAtTime(0.001, when + 0.3); o.connect(g); g.connect(master); o.start(when); o.stop(when + 0.35); }
+  function playHat(when, accent, vel = 1, midi = 60) { if (vel <= 0) return; const s = ac.createBufferSource(); s.buffer = noiseBuf; const hp = ac.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = clamp(7000 * Math.pow(2, (midi - 60) / 12), 1500, 18000); const g = ac.createGain(); g.gain.setValueAtTime((accent ? 0.25 : 0.12) * vel, when); g.gain.exponentialRampToValueAtTime(0.001, when + 0.05); s.connect(hp); hp.connect(g); g.connect(master); s.start(when); s.stop(when + 0.06); }
+  function playDrum(t, when, vel, midi) {
+    vel = vel * (t.gain ?? 1);
+    if (t.voice === 'kick') return playKick(when, vel, midi);
+    if (t.voice === 'snare') { if (vel <= 0) return; const s = ac.createBufferSource(); s.buffer = noiseBuf; const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1800 * Math.pow(2, (midi - 60) / 12); bp.Q.value = 0.8; const g = ac.createGain(); g.gain.setValueAtTime(0.5 * vel, when); g.gain.exponentialRampToValueAtTime(0.001, when + 0.14); s.connect(bp); bp.connect(g); g.connect(master); s.start(when); s.stop(when + 0.15); return; }
+    if (t.voice === 'clap') { if (vel <= 0) return; for (const d of [0, 0.012, 0.024]) { const s = ac.createBufferSource(); s.buffer = noiseBuf; const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1200; bp.Q.value = 1.2; const g = ac.createGain(); g.gain.setValueAtTime(0.4 * vel, when + d); g.gain.exponentialRampToValueAtTime(0.001, when + d + 0.07); s.connect(bp); bp.connect(g); g.connect(master); s.start(when + d); s.stop(when + d + 0.08); } return; }
+    return playHat(when, true, vel, midi);
+  }
+  function audition(t, midi, vel) { ensureAudio(); if(t.kind==='drum')playDrum(t,ac.currentTime,vel==null?1:vel,midi);else playVoice(t, midi, vel == null ? 1 : vel, ac.currentTime, 0.18); }
+
+  // ---------- transport ----------
+  let playing = false, startTime = 0, nextTick = 0, nextTime = 0, timer = null, raf = null;
+  const stepAt = n => loop ? loop.start + (n % (loop.end - loop.start + 1)) : n % STEPS;
+  function schedule() {
+    while (nextTime < ac.currentTime + 0.12) {
+      const s = stepAt(nextTick);
+      const anySoloed = tracks.some(t => t.soloed);
+      const audible = t => anySoloed ? t.soloed : !t.muted;
+      melodic.forEach(t => { if (!audible(t)) return; const b = t.bars.find(x => x.start === s); if (b) playVoice(t, b.midi, b.vel, nextTime, b.len * SPB * 0.96); });
+      tracks.forEach(t => { if (t.kind !== 'drum' || t.deleted || !t.steps[s] || !audible(t)) return; playDrum(t, nextTime, stepVel(t, s), stepMidi(t, s)); });
+      nextTick++; nextTime += SPB;
+    }
+  }
+  const playBtn = document.getElementById('playBtn'), playIcon = document.getElementById('playIcon');
+  playIcon.innerHTML = ICON.play; { const caret = document.querySelector('.pill .caret'); if (caret) caret.innerHTML = ICON.chevronDown; }
+  function startPlayback() {
+    ensureAudio(); playing = true; startTime = ac.currentTime + 0.06; nextTick = 0; nextTime = startTime;
+    timer = setInterval(schedule, 25); playIcon.innerHTML = ICON.stop; playBtn.classList.add('playing'); playBtn.setAttribute('aria-label', 'Stop');
+    ui.grid.classList.add('playing'); ui.ruler.classList.add('playing'); raf = requestAnimationFrame(tick);
+  }
+  function stopPlayback() {
+    playing = false; clearInterval(timer); cancelAnimationFrame(raf);
+    playIcon.innerHTML = ICON.play; playBtn.classList.remove('playing'); playBtn.setAttribute('aria-label', 'Play');
+    ui.grid.classList.remove('playing'); ui.ruler.classList.remove('playing'); setPlayingStep(-1);
+  }
+  let lastPlayingStep = -1;
+  function setPlayingStep(s) {
+    if (s === lastPlayingStep) return; lastPlayingStep = s;
+    tracks.forEach(t => t.cells.forEach((c, i) => c.classList.toggle('playing', i === s)));
+    ui.noteEls.forEach(n => { const b = n._bar; n.classList.toggle('playing', s >= b.start && s < b.start + b.len); });
+  }
+  function tick() {
+    if (!playing) return;
+    const t = Math.max(0, ac.currentTime - startTime) / SPB;
+    const stepF = loop ? loop.start + (t % (loop.end - loop.start + 1)) : t % STEPS;
+    const s = Math.floor(stepF);
+    ui.playhead.style.transform = 'translateX(' + playheadX(stepF).toFixed(2) + 'px)';
+    ui.wash.style.transform = 'translateX(' + stepX(s) + 'px)';
+    ui.rulerPlayhead.style.transform = 'translateX(' + playheadX(stepF).toFixed(2) + 'px)';
+    setPlayingStep(s); raf = requestAnimationFrame(tick);
+  }
+  playBtn.addEventListener('click', () => playing ? stopPlayback() : startPlayback());
+  document.getElementById('portraitPlay').addEventListener('click',e=>{playing?stopPlayback():startPlayback();e.currentTarget.textContent=playing?'Stop preview':'Play preview';});
+
+  // ---------- dock state (local, never synced) ----------
+  let paintVersion = 0;
+  const dock = { open: false, track: null, pane: 'notes', ghosts: { piano: true, duo: true }, selectedStep: null, tall: false };
+  const ui = { noteEls: [], keyEls: new Map() };
+
+  // ---------- pitch rows: chromatic, or folded ----------
+  // Chromatic shows all 97 rows. Fold shows the scale's rows (Scale) or only the pitches that hold a note or an
+  // enabled ghost (Used), and always keeps any row that holds one, so a fold never hides a note. Scale is the
+  // default while the scale lock is on; dock.fold records an explicit choice ('off', 'scale' or 'used').
+  let viewRows = [], rowIndex = new Map();
+  const effectiveFold = () => dock.fold ?? (scaleLocked ? 'scale' : 'off');
+  function contentMidis() {
+    const t = dock.track; if (!t || t.kind !== 'melodic') return [];
+    return [t, ...melodic.filter(o => o !== t && dock.ghosts[o.id])].flatMap(o => { computeBars(o); return o.bars.map(b => b.midi); });
+  }
+  function buildRows(keep) {
+    const fold = effectiveFold(); let set;
+    if (fold === 'off') set = new Set(Array.from({ length: ROWS }, (_, i) => MIDI_MAX - i));
+    else {
+      set = new Set(contentMidis());
+      if (fold === 'scale') for (let m = MIDI_MIN; m <= MIDI_MAX; m++) if (MAJOR.has(pc(m))) set.add(m);
+      if (keep) viewRows.forEach(m => set.add(m));
+      if (!set.size) set.add(BASE_MIDI + (dock.track?.transpose || 0));
+    }
+    viewRows = [...set].sort((a, b) => b - a); rowIndex = new Map(viewRows.map((m, i) => [m, i]));
+    ui.keycol?.classList.toggle('folded', fold !== 'off');
+  }
+  // A pitch that is not shown sits just above the next lower row.
+  function rowOf(midi) { if (rowIndex.has(midi)) return rowIndex.get(midi); const i = viewRows.findIndex(m => m < midi); return i < 0 ? viewRows.length - 1 : i; }
+  const yOf = midi => rowOf(midi) * H;
+  const midiAtY = y => viewRows[clamp(Math.floor(y / H), 0, viewRows.length - 1)];
+  const stepRow = (midi, up) => viewRows[clamp(rowOf(midi) - up, 0, viewRows.length - 1)];
+  const inner = document.getElementById('inner');
+  const tracksEl = document.getElementById('tracks');
+
+  function rowClasses(midi, t) {
+    const c = [isBlack(midi) ? 'black' : 'white'];
+    if (pc(midi) === 0) c.push('c', 'root'); else if (pc(midi) === 7) c.push('fifth');
+    const r = (t || piano).range; if (midi < r.min || midi > r.max) c.push('out');
+    if (!inScale(midi)) c.push('scale-out');
+    return c.join(' ');
+  }
+  const trLabel = t => (t.transpose >= 0 ? '+' : '') + t.transpose;
+
+  // ---------- ruler ----------
+  function renderRuler(parent) {
+    const rowEl = el('ruler-row', parent);
+    el('ruler-spacer', rowEl).textContent = 'Loop';
+    const ruler = el('loop-ruler', rowEl); ruler.setAttribute('role', 'group'); ruler.tabIndex=0; ruler.setAttribute('aria-label', 'Loop region: arrows change start; Shift+arrows change end; Delete clears');
+    const markers = el('ruler-markers', ruler);
+    for (let s = 0; s < STEPS; s += 4) { const page = s % 16 === 0; const m = el('ruler-marker ' + (page ? 'pg' : 'beat'), markers); m.style.left = stepX(s) + 'px'; el('marker-label', m).textContent = page ? String(s / 16 + 1) : (Math.floor(s / 16) + 1) + '.' + ((s % 16) / 4 + 1); }
+    const region = el('loop-region', ruler); region.style.display = 'none'; el('loop-bracket start', region); el('loop-bracket end', region);
+    const shiftMarker = el('shift-click-marker', ruler); shiftMarker.style.display = 'none';
+    ui.ruler = ruler; ui.rulerPlayhead = el('ruler-playhead', ruler);
+    let dragStart = null, dragEnd = null, shiftStart = null;
+    const xToStep = x => Math.min(STEPS - 1, Math.max(0, xToIndex(x - ruler.getBoundingClientRect().left)));
+    const showRegion = (r, preview) => {
+      if (!r) { region.style.display = 'none'; ruler.classList.remove('has-loop'); ruler.title = 'Drag to set loop region'; return; }
+      region.style.display = ''; region.classList.toggle('preview', !!preview); region.style.left = stepX(r.start) + 'px'; region.style.width = spanWidth(r.start, r.end - r.start + 1) + 'px';
+      ruler.classList.add('has-loop'); ruler.title = 'Loop: steps ' + (r.start + 1) + '-' + (r.end + 1) + ' (double-click to clear)';
+    };
+    const setLoop = r => { loop = r; showRegion(r); ruler.setAttribute('aria-label', (r ? 'Loop steps '+(r.start+1)+' through '+(r.end+1) : 'Full pattern') + '. Arrows change start; Shift+arrows change end; Delete clears'); if(ui.loopInputs){ui.loopInputs[0].value=(r?.start??0)+1;ui.loopInputs[1].value=(r?.end??STEPS-1)+1;}if(ui.clearLoop)ui.clearLoop.disabled=!r; if (ui.shadeLoop) ui.shadeLoop(); };ui.setLoop=setLoop;
+    ruler.addEventListener('keydown', e => {
+      if(e.key==='Delete'||e.key==='Backspace'){e.preventDefault();setLoop(null);return;}
+      if(e.key!=='ArrowLeft'&&e.key!=='ArrowRight')return;e.preventDefault();
+      const r=Object.assign({start:0,end:STEPS-1},loop),delta=e.key==='ArrowLeft'?-1:1;
+      if(e.shiftKey)r.end=clamp(r.end+delta,r.start+1,STEPS-1);else r.start=clamp(r.start+delta,0,r.end-1);setLoop(r);
+    });
+    ruler.title = 'Drag to set loop region';
+    ruler.addEventListener('pointerdown', e => {
+      const s = xToStep(e.clientX);
+      if (e.shiftKey) { if (shiftStart === null) { shiftStart = s; shiftMarker.style.display = ''; shiftMarker.style.left = stepX(s) + 'px'; } else { if (Math.abs(s - shiftStart) + 1 >= MIN_LOOP_LENGTH) setLoop({ start: Math.min(shiftStart, s), end: Math.max(shiftStart, s) }); shiftStart = null; shiftMarker.style.display = 'none'; } return; }
+      shiftStart = null; shiftMarker.style.display = 'none'; dragStart = dragEnd = s; ruler.classList.add('dragging'); try { ruler.setPointerCapture(e.pointerId); } catch (_) {}
+    });
+    ruler.addEventListener('pointermove', e => { if (dragStart === null) return; dragEnd = xToStep(e.clientX); showRegion({ start: Math.min(dragStart, dragEnd), end: Math.max(dragStart, dragEnd) }, true); });
+    ruler.addEventListener('pointerup', () => { ruler.classList.remove('dragging'); if (dragStart !== null && dragEnd !== null) { const start = Math.min(dragStart, dragEnd), end = Math.max(dragStart, dragEnd); if (end - start + 1 >= MIN_LOOP_LENGTH) setLoop({ start, end }); else showRegion(loop); } dragStart = dragEnd = null; });
+    ruler.addEventListener('dblclick', () => { setLoop(null); shiftStart = null; shiftMarker.style.display = 'none'; });
+    window.addEventListener('keydown', e => { if (e.key === 'Escape') { shiftStart = null; shiftMarker.style.display = 'none'; } });
+  }
+
+  const selection = { track: null, steps: new Set(), anchor: null };
+  let copySource = null, copyData = null, copyStatusTimer = null;
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  // One line, three messages: pending (stays until pasted or cancelled), then a short-lived result.
+  function setCopyStatus(icon, html, ms) { if (!ui.copyStatus) return; clearTimeout(copyStatusTimer); ui.copyStatus.dataset.kind = ms ? 'result' : 'pending'; ui.copyStatus.innerHTML = icon + '<span>' + html + '</span>'; if (ms) copyStatusTimer = setTimeout(() => { if (!copySource) ui.copyStatus.replaceChildren(); }, ms); }
+  function setStatus(message) { if (ui.statusText) ui.statusText.textContent = message; }
+  function syncActions() {
+    tracks.forEach(t => {
+      t.copyEl.textContent = copySource && copySource !== t ? 'Paste' : 'Copy';
+      t.copyEl.classList.toggle('copy-source', copySource === t);
+      t.copyEl.classList.toggle('paste', !!copySource && copySource !== t);
+      t.copyEl.setAttribute('aria-label', (copySource && copySource !== t ? 'Paste into ' : 'Copy ') + t.name);
+      t.copyEl.setAttribute('aria-pressed', String(copySource === t));
+      t.copyEl.disabled = !copySource && !t.steps.some(Boolean);
+      if (t.miniCopy) { const paste = !!copySource && copySource !== t; t.miniCopy.innerHTML = paste ? ICON.paste : ICON.copy; t.miniCopy.classList.toggle('paste', paste); t.miniCopy.title = paste ? 'Paste into ' + t.name : copySource === t ? 'Copying ' + t.name + ' (click to cancel)' : 'Copy ' + t.name; t.miniCopy.setAttribute('aria-label', t.miniCopy.title); t.miniCopy.classList.toggle('copy-source', copySource === t); t.miniCopy.classList.toggle('paste', paste); t.miniCopy.disabled = t.copyEl.disabled; }
+    });
+    if (copySource) setCopyStatus(ICON.copy, 'Copying <b>' + esc(copySource.name) + '</b>. Press Paste on another row; Copy again or Esc cancels.');
+    else if (ui.copyStatus && ui.copyStatus.dataset.kind === 'pending') ui.copyStatus.replaceChildren();
+  }
+  function clearSelection() {
+    const previous = selection.track;
+    selection.track = null; selection.steps.clear(); selection.anchor = null;
+    if (previous) syncRow(previous);
+  }
+  function selectRange(t, i, extend) {
+    if (selection.track !== t) clearSelection();
+    selection.track = t;
+    if (extend && selection.anchor !== null) {
+      selection.steps = new Set(Array.from({length:Math.abs(i-selection.anchor)+1},(_,n)=>Math.min(i,selection.anchor)+n));
+    } else {
+      if (selection.steps.has(i)) selection.steps.delete(i); else selection.steps.add(i);
+      selection.anchor = i;
+    }
+    syncRow(t); setStatus(t.name + ': ' + selection.steps.size + ' steps selected');
+  }
+  function renameTrack(t) {
+    if (t.nameInput) return;
+    const input = el('rename-input', t.nameEl.parentElement, 'input');
+    input.value = t.name; input.maxLength = 32; input.setAttribute('aria-label', 'Rename ' + t.name);
+    t.nameEl.hidden = true; t.nameInput = input;
+    let done = false;
+    const finish = save => {
+      if (done) return; done = true;
+      const value = input.value.trim(); if (save && value) t.name = value;
+      input.remove(); t.nameInput = null; t.nameEl.hidden = false; updateIdentity(t);
+      if (dock.track === t) renderPane(); t.nameEl.focus(); syncActions();
+    };
+    input.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === 'Escape') { e.stopPropagation(); finish(e.key === 'Enter'); } });
+    input.addEventListener('blur', () => finish(true));
+    input.focus(); input.select();
+  }
+  // Production's naming rule: the row shows the track name only. The instrument appears where a name is shown in full
+  // (tooltip, dock title) and only once the track has been renamed away from its instrument's catalogue name.
+  const renamed = t => t.name !== t.inst;
+  const nameTooltip = t => (renamed(t) ? 'Instrument: ' + t.inst + '\n' : '') + 'ID: ' + t.sid + '\nDouble-click to rename';
+  function updateIdentity(t) {
+    t.nameEl.replaceChildren();
+    const nm=el('nm',t.nameEl,'span');nm.textContent=t.name;t.nameEl.title=nameTooltip(t);const chev=el('chev',t.nameEl,'span');chev.innerHTML=ICON.chevronDown;chev.setAttribute('aria-hidden','true');
+    if(t.wrap)t.wrap.style.setProperty('--cat',t.cat);
+    if(t.pillTr){t.pillTr.textContent=t.kind==='melodic'?trLabel(t):'—';}
+    t.nameEl.setAttribute('aria-label', 'Preview ' + t.name + '; double-click to rename');
+    if (t.tabEl) { t.tabEl.replaceChildren(); const tick=el('tick',t.tabEl);tick.style.setProperty('--cat',t.cat);t.tabEl.append(document.createTextNode(t.name)); }
+    const mute=t.wrap?.querySelector('.mute-button'),solo=t.wrap?.querySelector('.solo-button');if(mute)mute.setAttribute('aria-label','Mute '+t.name);if(solo)solo.setAttribute('aria-label','Solo '+t.name);
+  }
+  // A hold discloses without toggling; movement cancels the hold and scrolling stays native.
+  function bindStepGesture(c, t, i) {
+    let timer = null, held = false, origin = null, suppress = false;
+    const cancel = () => { clearTimeout(timer); timer=null; };
+    c.addEventListener('pointerdown', e => {
+      if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.isPrimary===false) return;
+      held=false; suppress=false; origin={x:e.clientX,y:e.clientY};
+      timer=setTimeout(()=>{held=true;suppress=true;selectStep(t,i,c);},400);
+    });
+    c.addEventListener('pointermove', e=>{if(origin && Math.hypot(e.clientX-origin.x,e.clientY-origin.y)>3){cancel();suppress=true;}});
+    c.addEventListener('pointerup',cancel);c.addEventListener('pointercancel',()=>{cancel();suppress=true;});
+    c.addEventListener('pointerleave',cancel);
+    c.addEventListener('click',e=>{
+      if(e.pointerType==='touch'&&e.isPrimary===false)return;
+      cancel();
+      if (suppress || held) { suppress=false;held=false;return; }
+      if (e.ctrlKey || (e.metaKey && !e.shiftKey)) { selectRange(t,i,false);return; }
+      if (e.shiftKey) { if(selection.track===t && selection.steps.size) selectRange(t,i,true);else selectStep(t,i,c);return; }
+      t.steps[i]=!t.steps[i];trackChanged(t); // Locks survive an ordinary toggle.
+    });
+    c.addEventListener('keydown',e=>{
+      if (e.key==='ArrowLeft'||e.key==='ArrowRight') {
+        e.preventDefault();const next=clamp(i+(e.key==='ArrowLeft'?-1:1),0,STEPS-1);
+        t.cells.forEach((cell,n)=>cell.tabIndex=n===next?0:-1);t.cells[next].focus();
+      } else if(e.key==='Enter' && e.shiftKey) { e.preventDefault();selectStep(t,i,c); }
+    });
+  }
+  function renderTrackRow(parent, t) {
+    const wrap=el('track-row-wrapper kind-'+t.kind,parent);t.wrap=wrap;
+    const row=el('track-row',wrap);
+    const left=el('track-left',row);const chip=el('cat-chip',left);chip.title='Drag to reorder';chip.setAttribute('aria-hidden','true');
+    const name=el('track-name',left,'button');t.nameEl=name;
+    const pillTr=el('pill-tr',left,'button');t.pillTr=pillTr;pillTr.title='Transpose: opens the Track pane';pillTr.setAttribute('aria-label','Transpose '+t.name);pillTr.addEventListener('click',()=>openDock(t,'track',pillTr));
+    const pillSteps=el('pill-steps',left,'button');pillSteps.textContent=String(STEPS);pillSteps.title='Step count: opens the Track pane';pillSteps.setAttribute('aria-label','Step count '+t.name);pillSteps.addEventListener('click',()=>openDock(t,'track',pillSteps));
+    let nameTimer=null;
+    // Production's name behaviour (TrackNameEditor): a click previews the instrument at the track's transpose after a
+    // 200ms wait that tells it from a double-click; Enter or Space previews at once; a double-click renames. In
+    // landscape a click opens the track's editor instead, as production's drawer override does.
+    const nameAction=()=>{if(isLandscape())openDock(t,'track',name);else audition(t,BASE_MIDI+t.transpose,1);};
+    name.addEventListener('click',()=>{clearTimeout(nameTimer);nameTimer=setTimeout(nameAction,200);});
+    name.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();clearTimeout(nameTimer);nameAction();}});
+    name.addEventListener('dblclick',()=>{clearTimeout(nameTimer);renameTrack(t);});
+    const line2=el('line2',left),state=el('group',line2),disclose=el('group',line2);
+    const m=el('tl-btn mute-button',state,'button');m.textContent='M';m.setAttribute('aria-label','Mute '+t.name);m.setAttribute('aria-pressed','false');
+    m.addEventListener('click',()=>{t.muted=!t.muted;m.classList.toggle('active',t.muted);m.setAttribute('aria-pressed',String(t.muted));row.classList.toggle('muted',t.muted);});
+    const so=el('tl-btn solo-button',state,'button');so.textContent='S';so.setAttribute('aria-label','Solo '+t.name);so.setAttribute('aria-pressed','false');
+    so.addEventListener('click',()=>{t.soloed=!t.soloed;so.classList.toggle('active',t.soloed);so.setAttribute('aria-pressed',String(t.soloed));});
+    const ex=el('expand-toggle',disclose,'button');t.toggleEl=ex;
+    ex.innerHTML=ICON.keys;ex.setAttribute('aria-label',t.kind==='melodic'?'Notes: open the piano roll for '+t.name:'No pitch view for '+t.name);ex.title=t.kind==='melodic'?'Notes':'';
+    ex.setAttribute('aria-expanded','false');
+    ex.addEventListener('click',()=>{
+      if (isLandscape()) openDock(t,'track',ex);
+      else if(t.kind!=='melodic') openDock(t,'track',ex);
+      else if(dock.open && dock.track===t && dock.pane==='notes') closeDock();
+      else openDock(t,'notes',ex);
+    });
+    const v=el('velocity-toggle',disclose,'button');v.innerHTML=ICON.lane;v.title='Velocity lane';v.setAttribute('aria-label',t.name+' velocity lane');v.setAttribute('aria-expanded','false');t.laneToggle=v;
+    const gear=el('tl-btn tools-toggle',disclose,'button');gear.innerHTML=ICON.gear;t.toolsEl=gear;gear.setAttribute('aria-label','Tools for '+t.name);gear.title='Pattern tools: opens the Track pane';gear.addEventListener('click',()=>openDock(t,'track',gear));
+    const act=el('group act-group',line2);
+    const miniCopy=el('tl-btn',act,'button');miniCopy.innerHTML=ICON.copy;t.miniCopy=miniCopy;miniCopy.addEventListener('click',()=>t.copyEl.click());
+    const miniClear=el('tl-btn',act,'button');miniClear.innerHTML=ICON.clear;miniClear.setAttribute('aria-label','Clear '+t.name+' pattern');miniClear.title='Clear pattern';miniClear.addEventListener('click',()=>t.wrap.querySelector('.row-actions button:nth-child(2)').click());
+    const miniDelete=el('tl-btn',act,'button');miniDelete.innerHTML=ICON.bin;miniDelete.setAttribute('aria-label','Delete '+t.name+' track');miniDelete.title='Delete track';miniDelete.addEventListener('click',()=>t.wrap.querySelector('.row-actions button:nth-child(3)').click());
+    const stepsEl=el('steps',row);
+    const grid=el('step-grid',stepsEl);grid.setAttribute('role','group');grid.setAttribute('aria-label',t.name+' pattern');
+    t.cells=[];
+    for(let i=0;i<STEPS;i++){
+      const c=el('step-cell'+(i%4===0?' beat-start':'')+(i>0&&i%PAGE_STEPS===0?' page-start':''),grid,'button');c.tabIndex=i===0?0:-1;
+      bindStepGesture(c,t,i);t.cells.push(c);
+    }
+    const actions=el('row-actions',row);
+    const copy=el('',actions,'button');t.copyEl=copy;copy.textContent='Copy';
+    copy.addEventListener('click',()=>{
+      if(copySource===t){copySource=null;copyData=null;setCopyStatus(ICON.copy,'Copy cancelled.',2500);}
+      else if(copySource){const from=copySource;t.steps=copyData.steps.slice();t.locks=copyData.locks.map(l=>l&&Object.assign({},l));t.pattern=t.steps;t.tieOrigins?.clear();trackChanged(t);copySource=null;copyData=null;setCopyStatus(ICON.paste,'Pasted <b>'+esc(from.name)+'</b> into <b>'+esc(t.name)+'</b>.',4000);}
+      else{copySource=t;copyData={steps:t.steps.slice(),locks:t.locks.map(l=>l&&Object.assign({},l))};}
+      syncActions();
+    });
+    const clear=el('',actions,'button');clear.textContent='Clear';clear.setAttribute('aria-label','Clear '+t.name+' pattern');
+    clear.addEventListener('click',()=>{t.steps.fill(false);t.locks.fill(null);t.tieOrigins?.clear();trackChanged(t);setStatus(t.name+' pattern cleared');});
+    const remove=el('',actions,'button');remove.textContent='Delete';remove.setAttribute('aria-label','Delete '+t.name+' track');
+    remove.addEventListener('click',()=>{
+      const index=tracks.indexOf(t);if(dock.track===t)closeDock();
+      if(copySource===t){copySource=null;copyData=null;}
+      if(selection.track===t)clearSelection();
+      t.deleted=true;tracks.splice(index,1);const mi=melodic.indexOf(t);if(mi>=0)melodic.splice(mi,1);
+      t.wrap.remove();t.tabEl.remove();syncActions();if(dock.open)drawGhosts();
+      const next=tracks[Math.min(index,tracks.length-1)];if(next)next.nameEl.focus();else playBtn.focus();
+    });
+    const lane=el('velocity-lane',wrap);lane.hidden=true;t.lane=lane;t.velocityInputs=[];
+    for(let i=0;i<STEPS;i++){
+      const input=el(i>0&&i%PAGE_STEPS===0?'page-start':'',lane,'input');input.type='range';input.min=0;input.max=127;
+      input.setAttribute('aria-label',t.name+' step '+(i+1)+' velocity');
+      input.addEventListener('input',()=>{t.locks[i]=Object.assign({},t.locks[i],{volume:Number(input.value)/127});trackChanged(t);});
+      t.velocityInputs.push(input);
+    }
+    v.addEventListener('click',()=>{lane.hidden=!lane.hidden;v.setAttribute('aria-expanded',String(!lane.hidden));});
+    updateIdentity(t);syncRow(t);
+  }
+  // The marks a cell carries, from its lock: level (volume), badge (pitch, first cell of a note only), bridge (tie),
+  // fold (envelope). Shared by the rows and the legend's example strip.
+  function decorateCell(c,o){
+    c.style.setProperty('--note-velocity',String(o.vol??1));c.style.setProperty('--tie-gap',(o.gap??GAP)+'px');
+    c.classList.toggle('tie',!!(o.on&&o.tie));c.classList.toggle('tie-next',!!(o.on&&o.next));
+    let chip=c.querySelector('.pchip');const show=o.melodic&&o.pitch!==0&&!(o.on&&o.tie);
+    if(show){if(!chip)chip=el('pchip',c,'span');chip.textContent=(o.pitch>0?'↑':'↓')+Math.abs(o.pitch);}else if(chip)chip.remove();
+    let fold=c.querySelector('.env-fold');if(o.env&&!fold)el('env-fold',c,'span');else if(!o.env&&fold)fold.remove();
+  }
+  function syncRow(t) {
+    computeBars(t);
+    t.cells.forEach((c,i)=>{
+      const on=!!t.steps[i],locked=!!t.locks[i]&&Object.keys(t.locks[i]).length>0;
+      c.classList.toggle('active',on);c.classList.toggle('has-lock',locked);c.classList.toggle('tie',on&&!!t.locks[i]?.tie);
+      c.classList.toggle('selected',dock.open&&dock.track===t&&dock.selectedStep===i);
+      c.classList.toggle('range-selected',selection.track===t&&selection.steps.has(i));
+      c.setAttribute('aria-label',t.name+' step '+(i+1)+', '+(on?'active '+noteName(stepMidi(t,i)):'inactive')+(locked?', has parameter lock':''));
+      c.setAttribute('aria-pressed',String(on));
+      {const lk=t.locks[i]||{},pv=lk.pitch||0,vol=Math.round(stepVel(t,i)*100);c.title='Step '+(i+1)+(on?'\n'+(t.kind==='melodic'?'Pitch: '+(pv>0?'+':'')+pv+' · ':'')+'Vol: '+vol+'%'+(lk.tie?' · Tied':''):'')+'\nShift+click or hold for details · Ctrl/Cmd+click selects';}
+      const input=t.velocityInputs[i],tied=on&&attackStep(t,i)!==i;
+      input.value=Math.round(stepVel(t,i)*127);input.disabled=tied;
+      input.title=tied?'Inherited from attack step '+(attackStep(t,i)+1)+'; turn off Tie to edit':'';
+      const envKeys=['attack','decay','release','attackDuration','holdDuration','decayDuration','releaseDuration'];
+      const hasEnv=!!t.locks[i]&&envKeys.some(k=>t.locks[i][k]!=null);
+      decorateCell(c,{on,melodic:t.kind==='melodic',pitch:on?stepMidi(t,i)-BASE_MIDI-t.transpose:(t.locks[i]?.pitch??0),vol:stepVel(t,i),tie:!!t.locks[i]?.tie,next:i+1<STEPS&&!!t.steps[i+1]&&!!t.locks[i+1]?.tie,env:hasEnv,gap:i%PAGE_STEPS===0?PAGE_GAP+GAP:GAP});
+    });
+  }
+  function trackChanged(t, refreshPane=true) {
+    syncRow(t);syncActions();if(dock.open){if(effectiveFold()!=='off'&&contentMidis().some(m=>!rowIndex.has(m))){buildRows(true);setPitchHeight(H);}if(dock.track===t)drawNotes(false);drawGhosts();if(refreshPane&&dock.track===t&&dock.pane==='step')renderPane();}
+  }
+
+  function displayMode(){if(innerWidth>=768&&innerHeight>=500)return 'desktop';if(innerHeight<500||innerWidth>innerHeight)return 'landscape';return 'portrait';}
+  const isLandscape=()=>displayMode()==='landscape';
+  const isPortrait=()=>displayMode()==='portrait';
+  // Whole-row white keys: C 2, D 2, E 1, F 2, G 2, A 2, B 1 = 12 rows; every key edge on a row line.
+  const WHITE_SPAN={0:[0,2],2:[0,2],4:[0,1],5:[0,2],7:[0,2],9:[0,2],11:[0,1]};
+  function renderDock(parent) {
+    const d=el('dock',parent);ui.dock=d;d.inert=true;d.setAttribute('aria-hidden','true');d.setAttribute('role','region');d.setAttribute('aria-label','Track editor');
+    const innerD=el('dock-inner',d),head=el('dock-head',innerD);ui.head=head;
+    ui.title=el('dock-title',head);ui.title.id='dock-context';
+    const right=el('right',head);
+    const detent=el('ib',right,'button');ui.detent=detent;detent.innerHTML=ICON.chevronUp+'<span>Tall</span>';detent.setAttribute('aria-label','Toggle tall editor');
+    detent.addEventListener('click',()=>{dock.tall=!dock.tall;d.classList.toggle('tall',dock.tall);detent.innerHTML=dock.tall?ICON.chevronDown+'<span>Compact</span>':ICON.chevronUp+'<span>Tall</span>';setTimeout(fitComparison,reduced?0:220);});
+    const close=el('ib',right,'button');close.innerHTML=ICON.x;close.setAttribute('aria-label','Close editor');close.addEventListener('click',closeDock);
+    const tabs=el('chips track-tabs',head);tabs.setAttribute('role','group');tabs.setAttribute('aria-label','Editing track');
+    tracks.forEach(t=>{const c=el('chip',tabs,'button');t.tabEl=c;updateIdentity(t);c.addEventListener('click',()=>openDock(t,dock.pane,c));});
+    const panes=el('chips pane-tabs',head);panes.setAttribute('role','group');panes.setAttribute('aria-label','Editor view');ui.paneChips={};
+    [['notes','Notes'],['step','Step'],['track','Track']].forEach(([k,label])=>{const c=el('chip',panes,'button');c.textContent=label;c.addEventListener('click',()=>{if(ui.cancelDrag)ui.cancelDrag();dock.pane=k;renderPane();if(k==='notes'&&dock.fitPending){fitComparison(true);dock.fitPending=false;}});ui.paneChips[k]=c;});
+    const shell=el('tools-shell',innerD);ui.toolsShell=shell;
+    const back=el('tool-scroll',shell,'button');back.textContent='‹';back.setAttribute('aria-label','Scroll tools left');
+    const tools=el('dock-tools',shell);ui.tools=tools;ui.pane=el('pane',tools);
+    const next=el('tool-scroll',shell,'button');next.textContent='›';next.setAttribute('aria-label','Scroll tools right');
+    const overflow=()=>{const needed=ui.pane.scrollWidth>shell.clientWidth+2;back.hidden=next.hidden=!needed;back.disabled=tools.scrollLeft<1;next.disabled=tools.scrollLeft+tools.clientWidth>=tools.scrollWidth-2;};
+    back.addEventListener('click',()=>{tools.scrollLeft-=Math.max(100,tools.clientWidth*.7);overflow();});
+    next.addEventListener('click',()=>{tools.scrollLeft+=Math.max(100,tools.clientWidth*.7);overflow();});
+    tools.addEventListener('scroll',overflow);ui.overflow=overflow;
+    const body=el('dock-body',innerD);ui.body=body;
+    const left=el('dock-left',body),rail=el('range-rail',left);ui.rail=rail;ui.bracket=el('bracket',rail);
+    const keycol=el('keycol',left);ui.keycol=keycol;ui.keyList=[];
+    const order=Array.from({length:ROWS},(_,i)=>MIDI_MIN+i).sort((a,b)=>Number(isBlack(a))-Number(isBlack(b)));
+    order.forEach(midi=>{
+      const k=el('key',keycol,'button');k.innerHTML='<span class="lbl">'+noteName(midi)+'</span>';k.setAttribute('aria-label','Play '+noteName(midi));k.tabIndex=midi===60?0:-1;
+      k.addEventListener('click',()=>{if(dock.track)audition(dock.track,midi,1);k.classList.add('pressed');setTimeout(()=>k.classList.remove('pressed'),160);});
+      k.addEventListener('keydown',e=>{if(e.key==='ArrowUp'||e.key==='ArrowDown'){e.preventDefault();const next=stepRow(midi,e.key==='ArrowUp'?1:-1);k.tabIndex=-1;const target=ui.keyEls.get(next);target.tabIndex=0;target.focus();ensurePitchVisible(next);}});
+      ui.keyEls.set(midi,k);ui.keyList.push([midi,k]);
+    });
+    const scroll=el('dock-scroll',body);ui.scroll=scroll;
+    const grid=el('grid',scroll);grid.style.width=GRID_WIDTH+'px';ui.grid=grid;
+    ui.rowEls=Array.from({length:ROWS},()=>el('row',grid));
+    const lines=el('lines',grid);
+    // Grid lines sit in the gaps between columns: a dark gutter with the line inside it, and a band in the page gap.
+    for(let i=1;i<STEPS;i++){
+      const page=i%PAGE_STEPS===0;if(!page){const g=el('grid-gutter',lines);g.style.left=cellRight(i-1)+'px';}
+      const line=el('grid-line'+(page?' bar':i%4===0?' beat':''),lines);line.style.left=(page?stepX(i)-6:stepX(i)-2)+'px';
+      if(page){const band=el('page-band',lines);band.style.left=cellRight(i-1)+'px';}
+    }
+    ui.shadeL=el('loop-shade',grid);ui.shadeR=el('loop-shade',grid);
+    ui.hlRow=el('hl-row',grid);ui.hlCol=el('hl-col',grid);ui.selCol=el('sel-col',grid);
+    ui.ghostsLayer=el('ghosts',grid);ui.notesLayer=el('notes',grid);ui.ghost=el('ghost',grid);
+    ui.wash=el('wash',grid);ui.playhead=el('playhead',grid);ui.focusMarker=el('grid-focus',grid);
+    const hit=el('hit',grid);ui.hit=hit;ui.tip=el('tip',grid);
+    ui.details=el('dock-details',body);
+    ui.status=el('editor-status',innerD);ui.status.id='editor-status';ui.status.setAttribute('role','status');
+    ui.status.append(ui.title);
+    ui.statusText=el('status-message',ui.status,'span');setStatus('Arrow keys move through notes. Enter toggles. Shift+Enter opens Step.');
+    ui.timeline=el('mobile-timeline',ui.status);ui.timeline.setAttribute('aria-hidden','true');
+    const caption=el('timeline-caption',ui.timeline,'span');caption.textContent='Bar · beat';
+    ui.timelineLabels=[];for(let i=0;i<STEPS;i+=4){const label=el('',ui.timeline,'span');label.textContent=i%16===0?String(i/16+1):(Math.floor(i/16)+1)+'.'+(i%16/4+1);ui.timelineLabels.push([i,label]);}
+    const syncTimeline=()=>ui.timelineLabels.forEach(([i,label])=>label.style.left=92+stepX(i)-body.scrollLeft+'px');body.addEventListener('scroll',syncTimeline);syncTimeline();
+    scroll.addEventListener('scroll',()=>{const y=-scroll.scrollTop+'px';rail.style.transform=keycol.style.transform='translateY('+y+')';});
+    ui.shadeLoop=()=>{grid.classList.toggle('has-loop',!!loop);if(!loop)return;ui.shadeL.style.left='0';ui.shadeL.style.width=stepX(loop.start)+'px';ui.shadeR.style.left=cellRight(loop.end)+'px';ui.shadeR.style.right='0';};
+    bindHit(hit,grid);
+    let lastViewport='';
+    const fitHead=()=>{
+      const viewport=innerWidth+':'+innerHeight,changed=lastViewport&&lastViewport!==viewport;lastViewport=viewport;
+      const width=isLandscape()?innerWidth-18:tracksEl.clientWidth;
+      head.style.width=shell.style.width=ui.details.style.width=ui.status.style.width=width+'px';
+      ui.overflow();updateMode();if(changed&&dock.open){if(ui.cancelDrag)ui.cancelDrag();requestAnimationFrame(fitComparison);}
+    };
+    ui.fitHead=fitHead;if(window.ResizeObserver)new ResizeObserver(fitHead).observe(tracksEl);window.addEventListener('resize',fitHead);
+    buildRows(false);setPitchHeight(18);fitHead();
+  }
+  function updateMode() {
+    const mode=displayMode();document.documentElement.dataset.displayMode=mode;
+    if(ui.mode!==mode&&dock.open){dock.pan=mode==='landscape';ui.hit.classList.toggle('pan',dock.pan);ui.panButton?.setAttribute('aria-pressed',String(dock.pan));}ui.mode=mode;
+    const portrait=isPortrait();
+    document.querySelector('.sequencer').inert=portrait;
+    if(portrait&&dock.open){if(ui.cancelDrag)ui.cancelDrag();closeDock();}
+    if(isLandscape()){
+      tracksEl.inert=dock.open;
+      document.querySelector('.transport').inert=dock.open;
+    }else{
+      tracksEl.inert=false;document.querySelector('.transport').inert=false;
+      tracks.forEach(t=>{t.toggleEl.innerHTML=ICON.keys;});
+    }
+    // A fixed editor must not inherit an inert background ancestor.
+    if(isLandscape()&&dock.open){tracksEl.inert=false;ui.rows.inert=true;ui.ruler.parentElement.inert=true;}else if(ui.rows){ui.rows.inert=portrait;ui.ruler.parentElement.inert=portrait;}
+  }
+  function applyClasses() {
+    const t=dock.track||tracks.find(t=>t.kind==='melodic')||piano;
+    ui.rowEls.forEach((r,i)=>r.className='row '+rowClasses(MIDI_MAX-i,t));
+    ui.keyList.forEach(([midi,k])=>{const hover=k.classList.contains('hover');k.className='key '+rowClasses(midi,t)+(hover?' hover':'');});
+    const inRange=viewRows.filter(m=>m>=t.range.optMin&&m<=t.range.optMax);ui.bracket.hidden=!inRange.length;
+    if(inRange.length){ui.bracket.style.top=yOf(inRange[0])+2+'px';ui.bracket.style.height=Math.max(2,(rowOf(inRange[inRange.length-1])-rowOf(inRange[0])+1)*H-4)+'px';}
+  }
+  function noteInk(node) {
+    const value=getComputedStyle(node).backgroundColor;
+    const values=value.match(/[\d.]+/g).slice(0,3).map(Number).map(v=>value.startsWith('color(')?v*255:v);
+    const linear=v=>{v/=255;return v<=.04045?v/12.92:Math.pow((v+.055)/1.055,2.4);};
+    const l=values.reduce((sum,v,i)=>sum+linear(v)*[.2126,.7152,.0722][i],0);
+    // Choose only the text foreground from the actual CSS fill; CSS still owns every velocity colour.
+    node.style.setProperty('--note-label-ink',(l+.05)/.056>=1.05/(l+.05)?'#121212':'#ffffff');
+  }
+  // Bar height: the row minus an inset equal to the cell border, so bars sit on whole pixels.
+  const barInset = () => H>=18?2:H>=4?1:0;
+  const barH = () => H-2*barInset();
+  const ghostH = () => Math.max(1,barH()-2);
+  const barRadius = h => Math.min(4,h/2);
+  function drawNotes(fade) {
+    const t=dock.track;if(!t)return;const layer=ui.notesLayer,version=++paintVersion;
+    const paint=()=>{if(version!==paintVersion||t!==dock.track)return;computeBars(t);layer.replaceChildren();ui.noteEls=[];
+      (t.kind==='melodic'?t.bars:[]).forEach(b=>{const n=el('note',layer);n.style.left=stepX(b.start)+'px';n.style.width=spanWidth(b.start,b.len)+'px';const bh=barH();n.style.top=yOf(b.midi)+((H-bh)/2)+'px';n.style.height=bh+'px';n.style.borderRadius=barRadius(bh)+'px';n.style.setProperty('--note-velocity',String(b.vel));n.classList.toggle('has-vol',b.vel<1);const label=el('bar-label',n);label.textContent=noteName(b.midi);n._bar=b;ui.noteEls.push(n);noteInk(n);});syncRow(t);
+    };
+    if(fade&&!reduced){layer.classList.add('fading');setTimeout(()=>{paint();layer.classList.remove('fading');},120);}else paint();
+  }
+  function drawGhosts() {
+    ui.ghostsLayer.replaceChildren();
+    melodic.forEach(o=>{if(o===dock.track||!dock.ghosts[o.id])return;computeBars(o);o.bars.forEach(b=>{const g=el('gnote',ui.ghostsLayer);g.style.setProperty('--gc',o.cat);g.style.left=stepX(b.start)+'px';g.style.width=spanWidth(b.start,b.len)+'px';const gh=ghostH();g.style.top=yOf(b.midi)+((H-gh)/2)+'px';g.style.height=gh+'px';g.style.borderRadius=barRadius(gh)+'px';});});
+  }
+  function setPitchHeight(value) {
+    H=clamp(value,2,36);document.documentElement.style.setProperty('--pitch-row-height',H+'px');
+    ui.grid.style.height=ui.rail.style.height=ui.keycol.style.height=viewRows.length*H+'px';
+    ui.rowEls.forEach((r,i)=>{const midi=MIDI_MAX-i;r.hidden=!rowIndex.has(midi);r.style.top=yOf(midi)+'px';r.style.height=H+'px';});
+    const folded=effectiveFold()!=='off';
+    ui.keyList.forEach(([midi,k])=>{k.hidden=!rowIndex.has(midi);if(folded){k.style.top=yOf(midi)+'px';k.style.height=H+'px';k.style.paddingTop='0px';return;}let top,height,pad=0;if(isBlack(midi)){top=(MIDI_MAX-midi)*H;height=H;}else{const span=WHITE_SPAN[pc(midi)],rb=midi-MIDI_MIN;top=Math.max(0,(ROWS-rb-span[1])*H);height=Math.min(ROWS*H,(ROWS-rb-span[0])*H)-top;pad=(span[1]-1)*H;}k.style.top=top+'px';k.style.height=height+'px';k.style.paddingTop=pad+'px';});
+    ui.hlRow.style.height=ui.focusMarker.style.height=H+'px';ui.ghost.style.height=barH()+'px';ui.ghost.style.width=STEP_W+'px';
+    ui.grid.classList.toggle('overview',H<12);ui.keycol.classList.toggle('overview',H<12);
+    applyClasses();if(dock.track){drawNotes(false);drawGhosts();}moveGridCursor(false);
+  }
+  function comparisonMidis() {
+    const t=dock.track;if(!t)return [];
+    return [t,...melodic.filter(o=>o!==t&&dock.ghosts[o.id])].flatMap(o=>{computeBars(o);return o.bars.map(b=>b.midi);});
+  }
+  function fitComparison(initial=false) {
+    if(!dock.track||dock.track.kind!=='melodic')return;
+    buildRows(false);setPitchHeight(H);
+    const mids=initial===true?(computeBars(dock.track),dock.track.bars.map(b=>b.midi)):comparisonMidis();if(!mids.length){setPitchHeight(18);centreOn(dock.track);return;}
+    // Work in rows, not semitones: chromatic rows are semitones; a fold's rows are its shown pitches.
+    const hiR=rowOf(Math.max(...mids)),loR=rowOf(Math.min(...mids)),need=loR-hiR+5,viewport=parseFloat(getComputedStyle(ui.scroll).height)||252;
+    const folded=effectiveFold()!=='off',unit=folded?'row':'semitone';
+    if(initial===true){
+      // Opening never squeezes the roll below the spec's default H (18px, a 36 × 18 cell). If the track's range does
+      // not fit the compact body, the dock opens tall; if it still does not fit, it scrolls to centre the notes.
+      // A fold opens its rows as tall as the body allows, up to square 36px cells.
+      // "Fit comparison" remains the way to trade cell height for a whole-range overview.
+      const fits=(view,h)=>need*h<=view;
+      if(!fits(252,18)&&!dock.tall){dock.tall=true;ui.dock.classList.add('tall');if(ui.detent)ui.detent.innerHTML=ICON.chevronDown+'<span>Compact</span>';}
+      const view=isLandscape()?viewport:dock.tall?432:252;
+      setPitchHeight(folded?clamp(Math.floor(view/need),18,36):18);
+      const centre=((hiR+loR)/2)*H+H/2;
+      ui.scroll.style.scrollBehavior='auto';ui.scroll.scrollTop=Math.max(0,fits(view,H)?(hiR-2)*H-Math.max(0,(view-need*H)/2):centre-view/2);ui.scroll.dispatchEvent(new Event('scroll'));
+      setStatus('Showing '+dock.track.name+' at '+H+'px per '+unit+(folded?', folded to '+(effectiveFold()==='scale'?'the scale':'the pitches in use')+' ('+viewRows.length+' rows)':'')+(fits(view,H)?'.':'; scroll for the rest of its range, or Fit comparison for all of it.'));return;
+    }
+    setPitchHeight(clamp(Math.floor(viewport/need),2,36));
+    ui.scroll.style.scrollBehavior='auto';ui.scroll.scrollTop=Math.max(0,(hiR-2)*H);ui.scroll.dispatchEvent(new Event('scroll'));
+    setStatus('Showing '+dock.track.name+' and enabled comparison tracks. Zoom in for detail.');
+  }
+  function setFold(mode) {
+    dock.fold=mode;fitComparison(true);renderPane();
+  }
+  function zoomPitch(direction) {
+    const mid=(ui.scroll.scrollTop+ui.scroll.clientHeight/2)/H;
+    const stops=[2,4,6,9,12,18,24,36],next=direction>0?stops.find(h=>h>H):[...stops].reverse().find(h=>h<H);
+    if(!next)return;setPitchHeight(next);ui.scroll.scrollTop=Math.max(0,mid*H-ui.scroll.clientHeight/2);ui.scroll.dispatchEvent(new Event('scroll'));
+    setStatus('Pitch zoom changed. Arrow keys and Step controls remain available.');
+  }
+  function centreOn(t) {
+    computeBars(t);const mids=t.bars.map(b=>b.midi);const mid=mids.length?(rowOf(Math.min(...mids))+rowOf(Math.max(...mids)))/2:rowOf(BASE_MIDI);
+    ui.scroll.scrollTop=Math.max(0,mid*H-ui.scroll.clientHeight/2);ui.scroll.dispatchEvent(new Event('scroll'));
+  }
+  function ensurePitchVisible(midi) {
+    const top=yOf(midi);if(top<ui.scroll.scrollTop)ui.scroll.scrollTop=top;else if(top+H>ui.scroll.scrollTop+ui.scroll.clientHeight)ui.scroll.scrollTop=top+H-ui.scroll.clientHeight;
+    ui.scroll.dispatchEvent(new Event('scroll'));
+  }
+  function openDock(t,pane,opener) {
+    if(isPortrait()||t.deleted)return;
+    const switching=dock.track!==t,wasOpen=dock.open;
+    if(ui.cancelDrag)ui.cancelDrag();
+    if(!wasOpen)dock.opener=opener||t.nameEl;
+    dock.open=true;dock.track=t;dock.pane=pane||dock.pane;if(t.kind!=='melodic'&&dock.pane==='notes')dock.pane='track';
+    if(switching){dock.selectedStep=null;dock.cursorStep=0;dock.cursorMidi=BASE_MIDI+t.transpose;}if(switching||!wasOpen)dock.fitPending=true;
+    if(!wasOpen){dock.pan=isLandscape();ui.hit.classList.toggle('pan',dock.pan);}
+    ui.dock.classList.add('open');ui.dock.inert=false;ui.dock.setAttribute('aria-hidden','false');
+    tracks.forEach(o=>{o.wrap.classList.toggle('docked',o===t);o.tabEl.classList.toggle('active',o===t);o.tabEl.setAttribute('aria-pressed',String(o===t));syncRow(o);});
+    buildRows(false);setPitchHeight(H);drawNotes(switching&&wasOpen);renderPane();updateMode();ui.fitHead();
+    if(dock.pane==='notes'&&dock.fitPending)setTimeout(()=>{if(dock.track===t&&dock.pane==='notes'){fitComparison(true);dock.fitPending=false;}},0);
+    if(!wasOpen)ui.paneChips[dock.pane].focus({preventScroll:true});
+    const offset=t.wrap.offsetTop,viewTop=tracksEl.scrollTop+ui.ruler.parentElement.offsetHeight;
+    if(!isLandscape()&&(offset<viewTop||offset+58>tracksEl.scrollTop+tracksEl.clientHeight-ui.dock.offsetHeight))tracksEl.scrollTop=Math.max(0,offset-ui.ruler.parentElement.offsetHeight);
+    const tabs=t.tabEl.parentElement;if(t.tabEl.offsetLeft<tabs.scrollLeft)tabs.scrollLeft=t.tabEl.offsetLeft;else if(t.tabEl.offsetLeft+t.tabEl.offsetWidth>tabs.scrollLeft+tabs.clientWidth)tabs.scrollLeft=t.tabEl.offsetLeft+t.tabEl.offsetWidth-tabs.clientWidth;
+  }
+  function closeDock() {
+    if(!dock.open)return;
+    if(ui.cancelDrag)ui.cancelDrag();
+    dock.open=false;++paintVersion;ui.notesLayer.classList.remove('fading');ui.dock.classList.remove('open');ui.dock.inert=true;ui.dock.setAttribute('aria-hidden','true');
+    tracks.forEach(o=>{o.wrap.classList.remove('docked');o.toggleEl.classList.remove('active');if(o.toolsEl)o.toolsEl.classList.remove('active');o.toggleEl.setAttribute('aria-expanded','false');o.tabEl.setAttribute('aria-pressed','false');syncRow(o);});
+    ui.selCol.classList.remove('on');updateMode();
+    const opener=dock.opener;if(opener&&opener.isConnected&&!opener.closest('[inert]'))opener.focus({preventScroll:true});else (isPortrait()?document.getElementById('portraitPlay'):playBtn).focus({preventScroll:true});
+  }
+  function selectStep(t,i,opener) { openDock(t,'step',opener);dock.selectedStep=i;dock.cursorStep=i;dock.cursorMidi=stepMidi(t,i)||BASE_MIDI+t.transpose;renderPane();ensurePitchVisible(dock.cursorMidi);moveGridCursor(false); }
+  function updateContext(step=dock.selectedStep,midi) {
+    const t=dock.track;if(!t)return;
+    const inst=renamed(t)?'Instrument: '+t.inst:'';if(step===null||step===undefined){ui.title.textContent=inst;return;}
+    const effective=midi??stepMidi(t,step)??(BASE_MIDI+t.transpose+(t.locks[step]?.pitch??0));
+    ui.title.textContent=(inst?inst+' · ':'')+'Step '+(step+1)+' · '+noteName(effective)+' · v'+Math.round(stepVel(t,step)*127);
+  }
+  // The per-instrument controls: transpose, lane, preview, rename, mute, solo, copy/paste, clear, delete.
+  // Rendered into the dock's Track pane; `refresh` re-renders it.
+  // The Track pane uses the tile's three classes: values and commands are solid chips, state is a hollow box that
+  // fills when on, labels are bare text. Related controls share a tray. Actions show icon and word here (room allows).
+  function renderTrackTools(p,t,refresh){
+    const group=label=>{const g=el('rowc',p);el('k',g,'span').textContent=label;return el('tray',g);};
+    const button=(parent,label,handler,o={})=>{const b=el('cbtn'+(o.cls?' '+o.cls:''),parent,'button');b.innerHTML=(o.icon||'')+(o.iconOnly?'':'<span>'+label+'</span>');if(o.aria)b.setAttribute('aria-label',o.aria);b.addEventListener('click',handler);return b;};
+    if(t.kind==='melodic'){
+      const tr=group('Transpose');
+      const minus=button(tr,'−',()=>{t.transpose--;trackChanged(t);refresh();},{icon:ICON.minus,iconOnly:true,aria:'Track transpose down'});minus.disabled=t.transpose<=-24;
+      el('cbtn value',tr,'span').textContent=trLabel(t);
+      const plus=button(tr,'+',()=>{t.transpose++;trackChanged(t);refresh();},{icon:ICON.plus,iconOnly:true,aria:'Track transpose up'});plus.disabled=t.transpose>=24;
+    }
+    const vw=group('View');
+    const lane=button(vw,'Velocity lane',()=>{t.lane.hidden=!t.lane.hidden;t.laneToggle.setAttribute('aria-expanded',String(!t.lane.hidden));lane.setAttribute('aria-expanded',String(!t.lane.hidden));},{icon:ICON.lane});lane.setAttribute('aria-expanded',String(!t.lane.hidden));
+    const st=group('State');
+    const pm=button(st,'M',()=>{t.wrap.querySelector('.mute-button').click();refresh();},{cls:'st-mute',aria:'Mute '+t.name});pm.setAttribute('aria-pressed',String(!!t.muted));
+    const ps=button(st,'S',()=>{t.wrap.querySelector('.solo-button').click();refresh();},{cls:'st-solo',aria:'Solo '+t.name});ps.setAttribute('aria-pressed',String(!!t.soloed));
+    const ac=group('Pattern');const pasting=copySource&&copySource!==t;
+    const pc=button(ac,pasting?'Paste':copySource===t?'Copying…':'Copy',()=>{t.copyEl.click();refresh();},{icon:pasting?ICON.paste:ICON.copy});pc.disabled=t.copyEl.disabled;
+    button(ac,'Clear',()=>{t.wrap.querySelector('.row-actions button:nth-child(2)').click();refresh();},{icon:ICON.clear});
+    button(ac,'Delete',()=>{t.wrap.querySelector('.row-actions button:nth-child(3)').click();},{icon:ICON.bin});
+    button(group('Name'),'Rename',()=>{closeDock();renameTrack(t);});
+  }
+  function renderPane() {
+    const t=dock.track;if(!t)return;
+    const focusedKey=ui.pane.contains(document.activeElement)?document.activeElement.dataset.focusKey:null;
+    if(ui.statusText)ui.statusText.hidden=dock.pane!=='notes';
+    Object.entries(ui.paneChips).forEach(([k,c])=>{c.classList.toggle('active',dock.pane===k);c.setAttribute('aria-pressed',String(dock.pane===k));c.disabled=k==='notes'&&t.kind!=='melodic';});
+    tracks.forEach(o=>{o.toggleEl.classList.toggle('active',o===t&&dock.pane==='notes');o.toggleEl.setAttribute('aria-expanded',String(o===t&&dock.open));if(o.toolsEl)o.toolsEl.classList.toggle('active',o===t&&dock.pane==='track');});
+    updateContext();
+    ui.selCol.classList.toggle('on',dock.selectedStep!==null);if(dock.selectedStep!==null)ui.selCol.style.left=stepX(dock.selectedStep)+'px';
+    const details=dock.pane==='track'||t.kind!=='melodic';
+    ui.body.classList.toggle('show-details',details);ui.scroll.inert=ui.keycol.inert=details;
+    ui.pane.replaceChildren();const p=ui.pane,sel=dock.selectedStep;syncRow(t);
+    const group=label=>{const g=el('rowc',p);el('k',g,'span').textContent=label;return g;};
+    const button=(parent,label,handler,aria)=>{const b=el('cbtn',parent,'button');b.textContent=label;if(aria)b.setAttribute('aria-label',aria);b.addEventListener('click',handler);return b;};
+    if(dock.pane==='notes'){
+      const g=el('tray',group('Ghosts'));
+      melodic.filter(o=>o!==t).forEach(o=>{const b=button(g,o.name,()=>{dock.ghosts[o.id]=!dock.ghosts[o.id];b.setAttribute('aria-pressed',String(dock.ghosts[o.id]));drawGhosts();fitComparison();});b.classList.add('ghost-toggle');b.style.setProperty('--gc',o.cat);b.setAttribute('aria-pressed',String(!!dock.ghosts[o.id]));});
+      const velocity=el('',group('Insertion volume'),'input');velocity.type='range';velocity.min=0;velocity.max=127;velocity.value=Math.round(t.defaultVelocity*127);velocity.setAttribute('aria-label','Default velocity');velocity.addEventListener('input',()=>t.defaultVelocity=Number(velocity.value)/127);
+      const view=group('View');button(view,'Fit comparison',fitComparison);const zo=el('tray',view);button(zo,'−',()=>zoomPitch(-1),'Zoom pitch out').innerHTML=ICON.minus;button(zo,'+',()=>zoomPitch(1),'Zoom pitch in').innerHTML=ICON.plus;
+      el('k',view,'span').textContent='Fold';const fold=el('tray',view),current=effectiveFold();
+      [['scale','Scale','Show only the scale\u2019s rows, and any row that holds a note or ghost'],['used','Used','Show only the rows that hold a note or ghost']].forEach(([mode,label,title])=>{const b=button(fold,label,()=>setFold(current===mode?'off':mode));b.title=title;b.setAttribute('aria-pressed',String(current===mode));if(mode==='used'&&current!=='used'&&!contentMidis().length)b.disabled=true;});
+      const pan=button(view,'Pan',()=>{ui.cancelDrag();dock.pan=!dock.pan;ui.hit.classList.toggle('pan',dock.pan);pan.setAttribute('aria-pressed',String(dock.pan));setStatus(dock.pan?'Pan: drag to scroll. Switch Pan off to draw.':'Draw: hold for Step; drag to paint or change pitch.');});ui.panButton=pan;pan.setAttribute('aria-pressed',String(!!dock.pan));
+      el('value',view,'span').textContent=noteName(t.range.optMin)+'–'+noteName(t.range.optMax)+' best';
+      const bounds=group('Loop');ui.loopInputs=[];
+      for(const [key,label] of [['start','Loop start'],['end','Loop end']]){const input=el('',bounds,'input');input.type='number';input.min=key==='start'?1:2;input.max=key==='start'?STEPS-1:STEPS;input.value=key==='start'?(loop?.start??0)+1:(loop?.end??STEPS-1)+1;input.setAttribute('aria-label',label);input.addEventListener('change',()=>{const r=Object.assign({start:0,end:STEPS-1},loop),value=Number(input.value)-1;if(!Number.isFinite(value)||!Number.isInteger(value)){input.value=(r[key])+1;return;}r[key]=key==='start'?clamp(value,0,r.end-1):clamp(value,r.start+1,STEPS-1);ui.setLoop(r);setStatus('Loop steps '+(r.start+1)+' through '+(r.end+1));});ui.loopInputs.push(input);}
+      ui.clearLoop=button(bounds,'Clear loop',()=>ui.setLoop(null));ui.clearLoop.disabled=!loop;
+    }else if(dock.pane==='step'){
+      const selector=el('',group('Step'),'select');selector.setAttribute('aria-label','Selected step');
+      for(let i=0;i<STEPS;i++){const option=el('',selector,'option');option.value=i;option.textContent=String(i+1);}
+      if(sel===null){const option=el('',selector,'option');option.value='';option.textContent='Choose';selector.value='';}else selector.value=sel;
+      selector.addEventListener('change',()=>{dock.selectedStep=Number(selector.value);renderPane();});
+      if(sel===null){el('empty',p,'span').textContent='Choose a step, Shift+click, or hold a cell to edit.';}
+      else{
+        const lock=t.locks[sel]||{},tied=t.steps[sel]&&attackStep(t,sel)!==sel;
+        const effective=tied?stepMidi(t,sel):BASE_MIDI+t.transpose+(lock.pitch||0);
+        const pitch=el('tray',group('Pitch'));const nextPitch=d=>{let v=(lock.pitch||0)+d;while(v>=-24&&v<=24&&!inScale(BASE_MIDI+t.transpose+v))v+=d;return v>=-24&&v<=24?v:null;};
+        const changePitch=d=>{const v=nextPitch(d);if(v===null||tied)return;t.locks[sel]=Object.assign({},t.locks[sel],{pitch:v});trackChanged(t);audition(t,BASE_MIDI+t.transpose+v,stepVel(t,sel));};
+        const minus=button(pitch,'−',()=>changePitch(-1),'Step pitch down');el('cbtn value',pitch,'span').textContent=noteName(effective)+' ('+(effective-BASE_MIDI-t.transpose>=0?'+':'')+(effective-BASE_MIDI-t.transpose)+')';
+        const plus=button(pitch,'+',()=>changePitch(1),'Step pitch up');minus.innerHTML=ICON.minus;plus.innerHTML=ICON.plus;minus.disabled=tied||nextPitch(-1)===null;plus.disabled=tied||nextPitch(1)===null;
+        const slider=el('',group('Volume'),'input');slider.type='range';slider.min=0;slider.max=127;slider.value=Math.round(stepVel(t,sel)*127);slider.disabled=tied;slider.setAttribute('aria-label','Step volume');slider.title=tied?'Inherited from attack step '+(attackStep(t,sel)+1)+'; turn off Tie to edit':'';
+        const value=el('value',slider.parentElement,'span');value.textContent=slider.value;
+        slider.addEventListener('input',()=>{t.locks[sel]=Object.assign({},t.locks[sel],{volume:Number(slider.value)/127});value.textContent=slider.value;trackChanged(t,false);updateContext();});
+        const tie=button(group('Tie'),lock.tie?'Tied to previous':'New attack',()=>{t.locks[sel]=Object.assign({},t.locks[sel],{tie:!t.locks[sel]?.tie});t.tieOrigins?.delete(sel);trackChanged(t);});tie.setAttribute('aria-pressed',String(!!lock.tie));tie.disabled=t.kind!=='melodic';tie.title=t.kind!=='melodic'?'One-shot preview does not sustain ties':'';
+        const acts=el('tray',el('rowc',p));
+        button(acts,t.steps[sel]?'Deactivate':'Activate',()=>{t.steps[sel]=!t.steps[sel];trackChanged(t);},'Toggle selected step');
+        button(acts,'Erase step',()=>{t.steps[sel]=false;t.locks[sel]=null;t.tieOrigins?.delete(sel);trackChanged(t);});
+        button(acts,'Clear lock',()=>{t.locks[sel]=null;t.tieOrigins?.delete(sel);trackChanged(t);});
+        if(tied)el('context',p,'span').textContent='Pitch and volume inherit from attack step '+(attackStep(t,sel)+1);
+      }
+    }else{
+      renderTrackTools(p,t,renderPane);
+    }
+    ui.details.replaceChildren();if(dock.pane==='step'&&ui.title.textContent)el('',ui.details,'h3').textContent=ui.title.textContent;
+    if(dock.pane==='track'){
+      const controls=el('detail-controls',ui.details);
+      const instr=el('detail-info',controls,'span');instr.innerHTML='<span class="k">Instrument</span> '+esc(t.inst)+' <span class="id">'+esc(t.sid)+'</span>';
+      const label2=el('',controls,'label');label2.textContent='Steps ';
+      const count=el('',label2,'select');count.disabled=true;count.setAttribute('aria-label','Step count integration preview');el('',count,'option').textContent=STEPS;
+      el('',ui.details,'p').textContent='Integration preview: step count, envelope/FM parameters and pattern tools require the real app. These controls are disabled here.';
+    }else if(t.kind!=='melodic'){
+      el('',ui.details,'p').textContent=sel===null?'Choose a step above to edit this drum pattern.':'Edit pitch and volume above. This one-shot preview does not sustain ties.';
+      el('',ui.details,'p').textContent='Envelope controls are an integration preview; the real app must use its instrument capability rules.';
+    }
+    const controls=[...p.querySelectorAll('button,input,select')];controls.forEach((c,i)=>c.dataset.focusKey=dock.pane+':'+i);
+    if(focusedKey){const target=controls.find(c=>c.dataset.focusKey===focusedKey&&!c.disabled)||controls.find(c=>!c.disabled)||ui.paneChips[dock.pane];target.focus({preventScroll:true});}
+    requestAnimationFrame(ui.overflow);
+  }
+  function moveGridCursor(announce=true) {
+    if(!ui.focusMarker)return;
+    const t=dock.track,step=dock.cursorStep||0,midi=dock.cursorMidi||60;
+    ui.focusMarker.style.left=stepX(step)+'px';ui.focusMarker.style.top=yOf(midi)+'px';
+    if(t&&announce)updateContext(step,midi);
+    if(announce&&t){const active=!!barAt(t,step,midi),attack=attackStep(t,step);setStatus(t.name+' · Step '+(step+1)+' · '+noteName(midi)+' · '+(active?'active':'empty')+' · volume '+Math.round(stepVel(t,step)*127)+(active&&attack!==step?' · inherits attack step '+(attack+1):'')+'. Enter toggles; Shift+Enter edits Step; Space auditions.');}
+  }
+
+  function bindHit(hit,grid) {
+    hit.tabIndex=0;hit.setAttribute('role','group');hit.setAttribute('aria-label','Piano roll note editor');hit.setAttribute('aria-describedby','editor-status');
+    const pos=e=>{const r=grid.getBoundingClientRect();const x=clamp(e.clientX-r.left,0,GRID_WIDTH-1),y=clamp(e.clientY-r.top,0,viewRows.length*H-1);return{x,y,step:xToIndex(x),midi:midiAtY(y)};};
+    const edge=(p,b)=>p.x>cellRight(b.start+b.len-1)-9;
+    let pending=null,drag=null,suppress=false,hoverMidi=null,acceptedPointer=null;
+    const snapshot=t=>({track:t,steps:t.steps.slice(),locks:t.locks.map(l=>l&&Object.assign({},l)),tieOrigins:new Map(t.tieOrigins||[])});
+    const restore=(state,refresh=true)=>{state.track.tieOrigins=new Map(state.tieOrigins);state.track.steps.splice(0,STEPS,...state.steps);state.track.locks.splice(0,STEPS,...state.locks.map(l=>l&&Object.assign({},l)));if(refresh)trackChanged(state.track);};
+    const hideHover=()=>{grid.classList.remove('hovering');if(hoverMidi!==null)ui.keyEls.get(hoverMidi)?.classList.remove('hover');hoverMidi=null;};
+    ui.cancelDrag=()=>{
+      const active=!!drag||!!pending;
+      if(pending)clearTimeout(pending.timer);
+      if(drag)restore(drag.original);
+      pending=null;drag=null;acceptedPointer=null;suppress=true;hideHover();return active;
+    };
+    const showHover=p=>{
+      const t=dock.track;if(!t)return;
+      const b=barAt(t,p.step,p.midi),target=editableMidi(t,p.midi);
+      const preview=b?b.midi:target;
+      grid.classList.add('hovering');grid.classList.toggle('empty',!b);
+      ui.hlRow.style.top=yOf(preview===null?p.midi:preview)+'px';ui.hlCol.style.left=stepX(p.step)+'px';
+      ui.ghost.style.left=stepX(p.step)+'px';ui.ghost.style.top=yOf(target===null?p.midi:target)+((H-barH())/2)+'px';ui.ghost.style.opacity=target===null?'0':'';
+      ui.tip.style.left=p.x+'px';ui.tip.style.top=p.y+'px';
+      ui.tip.replaceChildren();
+      const strong=el('',ui.tip,'b');strong.textContent=noteName(preview===null?p.midi:preview);
+      ui.tip.append(document.createTextNode(b?' · '+b.len+' steps · volume '+Math.round(b.vel*127):' · Step '+(p.step+1)+(target===null?' · outside editable range':target!==p.midi?' · snapped':'')));
+      hit.style.cursor=dock.pan?'all-scroll':b?(edge(p,b)?'ew-resize':'ns-resize'):target===null?'not-allowed':'crosshair';
+      if(hoverMidi!==preview){if(hoverMidi!==null)ui.keyEls.get(hoverMidi)?.classList.remove('hover');hoverMidi=preview;if(preview!==null)ui.keyEls.get(preview)?.classList.add('hover');}
+    };
+    const mark=()=>{if(!drag?.bar)return;const n=ui.noteEls.find(n=>n._bar.start===drag.bar.start&&n._bar.midi===(drag.midi||drag.bar.midi));if(n)n.classList.add('dragging');};
+    const begin=()=>{
+      if(!pending)return;
+      clearTimeout(pending.timer);const p=pending.p,b=pending.bar;
+      drag={kind:b?(edge(p,b)?'resize':'move'):'paint',bar:b,original:pending.original,midi:b?b.midi:p.midi,lastStep:p.step,painted:new Set(),valid:true};
+      pending=null;
+      if(drag.kind==='paint'){
+        if(drag.original.steps[p.step]){drag.valid=false;return;}
+        const m=editableMidi(dock.track,p.midi);if(m===null){drag.valid=false;return;}
+        drag.midi=m;placeNote(dock.track,p.step,m,dock.track.defaultVelocity);drag.painted.add(p.step);trackChanged(dock.track);
+      }
+      mark();
+    };
+    const dragMove=p=>{
+      if(!drag)return;
+      const t=drag.original.track,m=editableMidi(t,p.midi);
+      if(m===null)drag.valid=false;
+      if(m===null){showHover(p);return;}
+      if(drag.kind==='paint'){
+        const from=Math.min(drag.lastStep,p.step),to=Math.max(drag.lastStep,p.step);
+        if(Array.from({length:to-from+1},(_,n)=>from+n).some(s=>drag.original.steps[s]&&!drag.painted.has(s))){drag.valid=false;setStatus('That step already has a note. The gesture will not overwrite it.');return;}
+        for(let s=from;s<=to;s++){placeNote(t,s,m,t.defaultVelocity);drag.painted.add(s);}
+        drag.lastStep=p.step;drag.midi=m;trackChanged(t);
+      }else if(drag.kind==='move'){
+        restore(drag.original,false);
+        if(m===drag.bar.midi){drag.midi=m;trackChanged(t);showHover(p);return;}
+        t.locks[drag.bar.start]=Object.assign({},t.locks[drag.bar.start],{pitch:m-BASE_MIDI-t.transpose});
+        drag.midi=m;trackChanged(t);
+      }else{
+        const b=drag.bar,len=clamp(p.step-b.start+1,1,STEPS-b.start);
+        const collision=Array.from({length:Math.max(0,len-b.len)},(_,n)=>b.start+b.len+n).some(s=>drag.original.steps[s]);
+        if(collision){drag.valid=false;setStatus('Length stops before an occupied step. Release restores the original note.');return;}
+        restore(drag.original,false);
+        for(let s=b.start+1;s<b.start+Math.max(len,b.len);s++){
+          if(s<b.start+len){
+            if(!t.steps[s]&&!t.tieOrigins.has(s))t.tieOrigins.set(s,{hasTie:Object.prototype.hasOwnProperty.call(t.locks[s]||{},'tie'),tie:t.locks[s]?.tie});
+            t.steps[s]=true;t.locks[s]=Object.assign({},t.locks[s],{tie:true});
+          }else{
+            t.steps[s]=false;const prior=t.tieOrigins.get(s);
+            if(prior){const lock=Object.assign({},t.locks[s]);if(prior.hasTie)lock.tie=prior.tie;else delete lock.tie;t.locks[s]=Object.keys(lock).length?lock:null;t.tieOrigins.delete(s);}
+          }
+        }
+        trackChanged(t);
+      }
+      mark();showHover(p);
+    };
+    hit.addEventListener('pointerdown',e=>{
+      if(e.button!==0||dock.pan||acceptedPointer!==null||e.isPrimary===false)return;
+      const t=dock.track;if(!t||t.kind!=='melodic')return;
+      acceptedPointer=e.pointerId;e.preventDefault();hit.focus({preventScroll:true});hit.setPointerCapture(e.pointerId);suppress=false;
+      const p=pos(e);dock.cursorStep=p.step;dock.cursorMidi=p.midi;moveGridCursor();
+      if(e.ctrlKey||(e.metaKey&&!e.shiftKey)){selectRange(t,p.step,false);suppress=true;return;}
+      if(e.shiftKey){if(selection.track===t&&selection.steps.size)selectRange(t,p.step,true);else selectStep(t,p.step,hit);suppress=true;return;}
+      const b=barAt(t,p.step,p.midi);pending={p,bar:b,x:e.clientX,y:e.clientY,original:snapshot(t),timer:null};
+      pending.timer=setTimeout(()=>{const step=p.step;pending=null;suppress=true;selectStep(t,step,hit);},400);
+      showHover(p);
+    });
+    hit.addEventListener('pointermove',e=>{
+      if(dock.pan||e.isPrimary===false||(acceptedPointer!==null&&e.pointerId!==acceptedPointer))return;
+      const p=pos(e);
+      if(pending&&Math.hypot(e.clientX-pending.x,e.clientY-pending.y)>3)begin();
+      if(drag)dragMove(p);else showHover(p);
+    });
+    hit.addEventListener('pointerup',e=>{
+      if(e.pointerId!==acceptedPointer)return;acceptedPointer=null;
+      if(dock.pan)return;const p=pos(e),t=dock.track;let committed=true;
+      if(suppress){suppress=false;return;}
+      if(pending){
+        clearTimeout(pending.timer);const b=pending.bar;pending=null;
+        if(b){clearBar(t,b);trackChanged(t);}else{const m=editableMidi(t,p.midi);if(m!==null&&!t.steps[p.step]){placeNote(t,p.step,m,t.defaultVelocity);trackChanged(t);audition(t,m,stepVel(t,p.step));}else{committed=false;if(t.steps[p.step])setStatus('That step already has a note. Open Step or drag its bar to change pitch.');}}
+      }else if(drag){if(!drag.valid||editableMidi(t,p.midi)===null){restore(drag.original);committed=false;}drag=null;}
+      if(committed){dock.cursorStep=p.step;dock.cursorMidi=stepMidi(t,p.step)??editableMidi(t,p.midi)??p.midi;moveGridCursor();}
+      showHover(p);
+    });
+    hit.addEventListener('pointercancel',e=>{if(e.pointerId===acceptedPointer)ui.cancelDrag();});
+    hit.addEventListener('lostpointercapture',e=>{if(e.pointerId===acceptedPointer)ui.cancelDrag();});
+    hit.addEventListener('pointerleave',()=>{if(!pending&&!drag)hideHover();});
+    hit.addEventListener('focus',()=>moveGridCursor());
+    hit.addEventListener('keydown',e=>{
+      const t=dock.track;if(!t)return;
+      dock.cursorStep=dock.cursorStep||0;dock.cursorMidi=dock.cursorMidi||BASE_MIDI+t.transpose;
+      if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(e.key)){
+        e.preventDefault();
+        if(e.key==='ArrowLeft')dock.cursorStep=clamp(dock.cursorStep-1,0,STEPS-1);
+        if(e.key==='ArrowRight')dock.cursorStep=clamp(dock.cursorStep+1,0,STEPS-1);
+        if(e.key==='ArrowUp')dock.cursorMidi=stepRow(dock.cursorMidi,1);
+        if(e.key==='ArrowDown')dock.cursorMidi=stepRow(dock.cursorMidi,-1);
+        if(e.key==='Home')dock.cursorStep=0;if(e.key==='End')dock.cursorStep=STEPS-1;
+        ensurePitchVisible(dock.cursorMidi);
+        const scroller=isLandscape()?ui.body:tracksEl,x=(isLandscape()?92:162)+stepX(dock.cursorStep);
+        const covered=isLandscape()?84:0;
+        if(x<scroller.scrollLeft+covered)scroller.scrollLeft=Math.max(0,x-covered);else if(x+STEP_W>scroller.scrollLeft+scroller.clientWidth)scroller.scrollLeft=x+STEP_W-scroller.clientWidth;
+        moveGridCursor();
+      }else if(e.key==='Enter'){
+        e.preventDefault();
+        if(e.shiftKey){selectStep(t,dock.cursorStep,hit);return;}
+        const b=barAt(t,dock.cursorStep,dock.cursorMidi);
+        if(b)clearBar(t,b);else{const m=editableMidi(t,dock.cursorMidi);if(m===null)return;if(t.steps[dock.cursorStep]){setStatus('That step already has a note. Shift+Enter opens Step to change pitch.');return;}placeNote(t,dock.cursorStep,m,t.defaultVelocity);dock.cursorMidi=m;}
+        trackChanged(t);moveGridCursor();
+      }else if(e.key==='Delete'||e.key==='Backspace'){
+        e.preventDefault();e.stopPropagation();if(selection.track&&selection.steps.size){const target=selection.track;selection.steps.forEach(i=>{target.steps[i]=false;target.locks[i]=null;target.tieOrigins?.delete(i);});clearSelection();trackChanged(target);moveGridCursor();return;}const b=barAt(t,dock.cursorStep,dock.cursorMidi);if(b){clearBar(t,b);for(let s=b.start;s<b.start+b.len;s++){t.locks[s]=null;t.tieOrigins?.delete(s);}trackChanged(t);moveGridCursor();}
+      }else if(e.key===' '){e.preventDefault();audition(t,dock.cursorMidi,1);}
+    });
+  }
+
+  // ---------- build ----------
+  renderRuler(inner);
+  const rowsEl = el('rows', inner); ui.rows = rowsEl;
+  ui.copyStatus = document.getElementById('copyStatus');
+  tracks.forEach(t => renderTrackRow(rowsEl, t));
+  el('fill', inner);
+  renderDock(inner);
+  syncActions();
+  applyClasses();
+  const scaleBtn = document.getElementById('scaleBtn');
+  const syncScaleBtn = () => { scaleBtn.innerHTML = scaleLocked ? ICON.lock : ICON.lockOpen; scaleBtn.title = scaleLocked ? 'Unlock scale (show all notes)' : 'Lock scale (constrain to scale notes only)'; };
+  syncScaleBtn();
+  scaleBtn.addEventListener('click', () => { scaleLocked = !scaleLocked; scaleBtn.setAttribute('aria-pressed', String(scaleLocked)); syncScaleBtn(); applyClasses(); if (dock.open && dock.fold == null && dock.track?.kind === 'melodic') { fitComparison(true); renderPane(); } });
+  window.addEventListener('keydown', e => {
+    if(e.defaultPrevented)return;
+    if(e.key==='Escape'){
+      if(ui.cancelDrag&&ui.cancelDrag()){e.preventDefault();return;}
+      if(copySource){copySource=null;copyData=null;syncActions();setCopyStatus(ICON.copy,'Copy cancelled.',2500);e.preventDefault();return;}
+      if(dock.open&&ui.dock.contains(document.activeElement)){closeDock();e.preventDefault();return;}
+      if(selection.steps.size){clearSelection();e.preventDefault();return;}
+    }else if((e.key==='Delete'||e.key==='Backspace')&&selection.track&&selection.steps.size&&!['INPUT','SELECT'].includes(document.activeElement.tagName)){
+      const t=selection.track;selection.steps.forEach(i=>{t.steps[i]=false;t.locks[i]=null;t.tieOrigins?.delete(i);});trackChanged(t);clearSelection();e.preventDefault();
+    }
+  });
+  // ---------- marks legend ----------
+  // Example strip: attack at +7, two ties, attack at −5, rest, attack at 0, tie, then a step at half volume on 0.
+  // Cells are real .step-cell elements decorated by the rows' own decorateCell, so the strip reads exactly as the rows do.
+  const DEMO=[{on:1,p:7},{on:1,p:7,tie:1},{on:1,p:7,tie:1},{on:1,p:-5},{on:0},{on:1,p:0},{on:1,p:0,tie:1},{on:1,p:0,vol:.5},{on:1,p:12,vol:.3},{on:1,p:12,tie:1,vol:.3},{on:1,p:0,env:1},{on:0,p:-12}];
+  const DEMO_CAPS=[[3,'one note, 3 steps'],[1,'note'],[1,'rest'],[2,'held 2 steps'],[1,'again'],[2,'quiet, held'],[1,'env.'],[1,'off']];
+  function renderLegendDemo(){
+    const host=document.getElementById('legendDemo');if(!host)return;host.replaceChildren();
+    const ex=el('ex',host);const grid=el('step-grid',ex);const cap=el('cap',ex);
+    DEMO.forEach((d,i)=>{
+      const c=el('step-cell'+(i%4===0?' beat-start':''),grid,'span');c.setAttribute('aria-hidden','true');
+      const locked=(d.p!==0||d.tie||d.vol!==undefined||d.env);
+      c.classList.toggle('active',!!d.on);c.classList.toggle('has-lock',!!locked);
+      decorateCell(c,{on:!!d.on,melodic:true,pitch:d.p||0,vol:d.vol??1,tie:!!d.tie,next:!!DEMO[i+1]?.tie,env:!!d.env,gap:GAP});
+    });
+    DEMO_CAPS.forEach(([n,text])=>{const l=el('',cap,'span');l.style.width=(n*STEP_W+(n-1)*GAP)+'px';l.textContent=text;});
+  }
+  renderLegendDemo();
+  // The page opens with Piano docked so its first frame shows the working state. In the app the dock opens only on request.
+  openDock(piano, 'notes');
+})();
+</script>
+
+</body>
+</html>

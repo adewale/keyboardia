@@ -1,0 +1,405 @@
+/**
+ * Piano roll dock: the Notes pane's roll.
+ *
+ * Ported from specs/mocks/piano-roll-dock.html (.dock-body, .dock-left,
+ * .range-rail, .keycol, .key, .dock-scroll, .grid and its layers). Every
+ * selector is scoped under .piano-roll-editor so the short layer names
+ * (.row, .note, .key, .tip) never leak into the rest of the app.
+ *
+ * Geometry: 18px pitch rows, 36px cells on a 39px step pitch with the rows'
+ * 8px page gap after every 16 steps (step-geometry.ts), grid viewport 252px
+ * (compact) or 432px (tall). Every horizontal position is set inline.
+ */
+
+.piano-roll-editor {
+  --dock-grid-h: 252px;
+  --pre-step-w: 36px;
+  --pre-row-h: 18px;
+
+  display: flex;
+  gap: 8px; /* Matches .track-row gap so the grid starts on the step edge */
+  min-width: max-content;
+  background: var(--color-surface);
+}
+
+.piano-roll-editor--tall {
+  --dock-grid-h: 432px;
+}
+
+/* ==========================================================================
+   Left panel: range rail + keyboard, sticky to the scroller's left edge
+   ========================================================================== */
+
+.piano-roll-editor__left {
+  width: var(--track-left-width);
+  min-width: var(--track-left-width);
+  height: var(--dock-grid-h);
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  overflow: hidden;
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+  transition: height 200ms ease-out;
+  /* A vertical swipe here scrolls the roll (PianoRollEditor.tsx); sideways
+     pans still scroll the landscape dock body. */
+  touch-action: pan-x;
+}
+
+.piano-roll-editor .range-rail {
+  position: relative;
+  will-change: transform;
+}
+
+.piano-roll-editor .range-rail .bracket {
+  position: absolute;
+  left: 7px;
+  width: 3px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--color-info-text), color-mix(in srgb, var(--color-info-text) 35%, transparent));
+}
+
+.piano-roll-editor .range-rail .bracket::before,
+.piano-roll-editor .range-rail .bracket::after {
+  content: '';
+  position: absolute;
+  left: -2px;
+  width: 7px;
+  height: 2px;
+  background: var(--color-info-text);
+  border-radius: 1px;
+}
+
+.piano-roll-editor .range-rail .bracket::before { top: 0; }
+.piano-roll-editor .range-rail .bracket::after { bottom: 0; }
+
+/* --------------------------------------------------------------------------
+   Keyboard
+
+   DESIGN NOTE: key colours are hardcoded on purpose. They are matte warm
+   greys (not the app's surfaces) so the keys read as keys at a glance, and
+   no app token carries these values. Everything else uses app tokens.
+   -------------------------------------------------------------------------- */
+
+.piano-roll-editor .keycol {
+  position: relative;
+  background: #0f0e0d;
+  will-change: transform;
+}
+
+.piano-roll-editor .key {
+  position: absolute;
+  left: 0;
+  margin: 0;
+  padding: 0 6px 0 0;
+  border: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1;
+  color: #3f3c37;
+  cursor: pointer;
+  user-select: none;
+  transition: background 70ms ease, transform 70ms ease;
+}
+
+.piano-roll-editor .key.white {
+  width: 100%;
+  z-index: 1;
+  background: linear-gradient(90deg, #bab6ad 0%, #c9c5bc 45%, #d3cfc6 100%);
+  border-bottom: 1px solid #0f0e0d;
+  border-radius: 0 2px 2px 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), inset -3px 0 3px rgba(0, 0, 0, 0.07);
+}
+
+.piano-roll-editor .key.black {
+  width: 58%;
+  z-index: 2;
+  color: rgba(255, 255, 255, 0.7);
+  background: linear-gradient(90deg, #2a2826 0%, #131211 60%, #060606 100%);
+  border-radius: 0 3px 3px 0;
+  box-shadow:
+    2px 2px 5px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.8);
+}
+
+.piano-roll-editor .key .lbl { opacity: 0; }
+.piano-roll-editor .key.c .lbl,
+.piano-roll-editor .key.hover .lbl,
+.piano-roll-editor .key.pressed .lbl { opacity: 1; }
+.piano-roll-editor .key.white.c .lbl { color: #25231f; font-weight: 600; }
+
+.piano-roll-editor .key.white:hover,
+.piano-roll-editor .key.white.hover { background: #ddd9d0; }
+.piano-roll-editor .key.black:hover,
+.piano-roll-editor .key.black.hover { background: #2a2826; }
+
+.piano-roll-editor .key.pressed {
+  background: var(--color-accent) !important;
+  transform: translateX(2px);
+}
+
+.piano-roll-editor .key.pressed .lbl { color: #fff !important; }
+
+.piano-roll-editor .key.white.root .lbl { color: #1f6fa8; }
+.piano-roll-editor .key.white.fifth .lbl { color: #7a3a9a; }
+.piano-roll-editor .key.black.fifth .lbl { color: var(--color-purple-text); }
+
+.piano-roll-editor .key.out { filter: brightness(0.45); }
+.piano-roll-editor .key.scale-out { filter: brightness(0.55); }
+.piano-roll-editor .key.out.scale-out { filter: brightness(0.35); }
+
+.piano-roll-editor .key:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+}
+
+/* ==========================================================================
+   Grid viewport: scrolls vertically; horizontal scroll is the parent's
+   ========================================================================== */
+
+.piano-roll-editor .dock-scroll {
+  flex: 0 0 auto;
+  height: var(--dock-grid-h);
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-color: var(--color-border-light) var(--color-surface);
+  scroll-behavior: smooth;
+  transition: height 200ms ease-out;
+}
+
+.piano-roll-editor .dock-scroll::-webkit-scrollbar { width: 8px; }
+.piano-roll-editor .dock-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+.piano-roll-editor .grid {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Pitch rows */
+.piano-roll-editor .row { position: absolute; left: 0; right: 0; }
+.piano-roll-editor .row.black { background: rgba(0, 0, 0, 0.22); }
+.piano-roll-editor .row.c { border-top: 1px solid rgba(255, 255, 255, 0.16); }
+.piano-roll-editor .row.root { background: color-mix(in srgb, var(--color-info-text) 7%, transparent); }
+.piano-roll-editor .row.fifth { background: color-mix(in srgb, var(--color-purple-text) 5%, transparent); }
+.piano-roll-editor .row.out {
+  background-image: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.045) 0 1px, transparent 1px 7px);
+}
+.piano-roll-editor .row.scale-out { background: rgba(0, 0, 0, 0.42); }
+
+/* Line hierarchy: bar (16 steps) 22%, beat (4 steps) 10%, step 4.5%, row 3.5%.
+   Row lines are uniform, so they stay a gradient; the page gap makes the step
+   pitch non-uniform, so each column line is an element at its cell's left edge. */
+.piano-roll-editor .lines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px var(--pre-row-h));
+}
+
+.piano-roll-editor .vline {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+}
+
+.piano-roll-editor .vline.step { background: rgba(255, 255, 255, 0.045); }
+.piano-roll-editor .vline.beat { background: rgba(255, 255, 255, 0.1); }
+.piano-roll-editor .vline.bar { background: rgba(255, 255, 255, 0.22); }
+
+/* The page gap reads as a boundary, as the 8px page gap does between cells */
+.piano-roll-editor .page-gap {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: color-mix(in srgb, var(--color-bg) 70%, transparent);
+}
+
+.piano-roll-editor .loop-shade {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
+
+/* Hover crosshair and selected column */
+.piano-roll-editor .hl-row,
+.piano-roll-editor .hl-col,
+.piano-roll-editor .sel-col {
+  position: absolute;
+  pointer-events: none;
+}
+
+.piano-roll-editor .hl-row { left: 0; right: 0; background: rgba(255, 255, 255, 0.035); }
+.piano-roll-editor .hl-col { top: 0; bottom: 0; width: var(--pre-step-w); background: rgba(255, 255, 255, 0.035); }
+
+.piano-roll-editor .sel-col {
+  top: 0;
+  bottom: 0;
+  width: var(--pre-step-w);
+  background: color-mix(in srgb, var(--color-info) 12%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-info) 50%, transparent);
+}
+
+/* Dashed ghost bar under the pointer on an empty cell */
+.piano-roll-editor .ghost {
+  position: absolute;
+  width: var(--pre-step-w);
+  height: calc(var(--pre-row-h) - 4px);
+  pointer-events: none;
+  border-radius: 3px;
+  border: 1px dashed color-mix(in srgb, var(--color-accent) 80%, transparent);
+  background: color-mix(in srgb, var(--color-accent) 18%, transparent);
+  z-index: 2;
+}
+
+/* ==========================================================================
+   Notes and ghosts
+   ========================================================================== */
+
+.piano-roll-editor .notes {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  animation: pre-notes-in 120ms ease;
+}
+
+@keyframes pre-notes-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.piano-roll-editor .note {
+  position: absolute;
+  box-sizing: border-box;
+  border-radius: 3px;
+  pointer-events: none;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35), 0 0 10px var(--glow);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 55%);
+  display: flex;
+  align-items: center;
+  padding-left: 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.85);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/* Lighter right edge: the resize handle */
+.piano-roll-editor .note::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 0 3px 3px 0;
+}
+
+.piano-roll-editor .note.playing {
+  box-shadow: 0 0 0 2px var(--color-playhead), 0 0 14px var(--color-playhead-glow);
+  filter: brightness(1.25);
+}
+
+.piano-roll-editor .note.dragging {
+  opacity: 0.9;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.5), 0 6px 18px rgba(0, 0, 0, 0.5);
+}
+
+.piano-roll-editor .ghosts {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.75;
+}
+
+.piano-roll-editor .gnote {
+  position: absolute;
+  box-sizing: border-box;
+  border-radius: 3px;
+  border: 1px dashed var(--gc);
+  background: color-mix(in srgb, var(--gc) 14%, transparent);
+}
+
+/* A shorter ghost track repeats across the docked length, drawn lighter */
+.piano-roll-editor .gnote.repeat { opacity: 0.55; }
+
+/* ==========================================================================
+   Playhead, hit layer, tooltip
+   ========================================================================== */
+
+.piano-roll-editor .playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--color-playhead);
+  box-shadow: 0 0 8px var(--color-playhead-glow);
+  pointer-events: none;
+  z-index: 3;
+}
+
+.piano-roll-editor .wash {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: var(--pre-step-w);
+  background: rgba(255, 255, 255, 0.045);
+  pointer-events: none;
+}
+
+.piano-roll-editor .hit {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  touch-action: none;
+}
+
+.piano-roll-editor .tip {
+  position: absolute;
+  z-index: 5;
+  pointer-events: none;
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+  border: 1px solid var(--color-border-light);
+  border-radius: 5px;
+  padding: 2px 7px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  white-space: nowrap;
+  transform: translate(10px, -26px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.piano-roll-editor .tip b {
+  color: var(--color-accent-text);
+  font-weight: 500;
+}
+
+/* Read-only (published): the roll plays and keys audition, nothing edits */
+.piano-roll-editor--readonly .hit { cursor: default; }
+
+@media (prefers-reduced-motion: reduce) {
+  .piano-roll-editor__left,
+  .piano-roll-editor .dock-scroll,
+  .piano-roll-editor .key {
+    transition: none;
+  }
+
+  .piano-roll-editor .notes { animation: none; }
+  .piano-roll-editor .dock-scroll { scroll-behavior: auto; }
+}

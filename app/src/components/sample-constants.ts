@@ -69,6 +69,16 @@ export function getInstrumentCategory(id: string): InstrumentCategory | null {
 }
 
 /**
+ * A track's category colour as a CSS value: the category's theme variable,
+ * falling back to its hex. Uncategorised instruments use the fx colour, as the
+ * dock's track tabs do.
+ */
+export function getInstrumentCategoryColor(id: string): string {
+  const category = INSTRUMENT_CATEGORIES[getInstrumentCategory(id) ?? 'fx'];
+  return `var(${category.cssVar}, ${category.color})`;
+}
+
+/**
  * Set of all valid sample/instrument IDs for validation
  * Used to validate session data before upload
  */

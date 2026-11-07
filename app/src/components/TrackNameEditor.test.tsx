@@ -9,7 +9,7 @@ afterEach(() => {
 });
 
 describe('TrackNameEditor disclosure behavior', () => {
-  it('exposes landscape drawer state and supports immediate keyboard activation', () => {
+  it('exposes the landscape dock disclosure state and supports immediate keyboard activation', () => {
     const onClickOverride = vi.fn();
     render(
       <TrackNameEditor
@@ -21,13 +21,13 @@ describe('TrackNameEditor disclosure behavior', () => {
         onPreview={vi.fn()}
         onClickOverride={onClickOverride}
         disclosureExpanded={false}
-        disclosureControls="track-drawer-track-1"
+        disclosureControls="editor-dock"
       />,
     );
 
     const trigger = screen.getByRole('button', { name: 'Kick' });
     expect(trigger.getAttribute('aria-expanded')).toBe('false');
-    expect(trigger.getAttribute('aria-controls')).toBe('track-drawer-track-1');
+    expect(trigger.getAttribute('aria-controls')).toBe('editor-dock');
 
     fireEvent.keyDown(trigger, { key: 'Enter' });
     expect(onClickOverride).toHaveBeenCalledOnce();

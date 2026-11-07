@@ -475,7 +475,8 @@ app/
 │   │   ├── TrackRow.tsx         # Track row with inline controls
 │   │   ├── Transport.tsx        # Tempo/swing display
 │   │   ├── TransportBar.tsx     # Play/stop, tempo controls
-│   │   ├── ChromaticGrid.tsx    # Melodic note entry grid
+│   │   ├── EditorDock.tsx       # Editor dock: Notes, Step and Track panes
+│   │   ├── PianoRollEditor.tsx  # The dock's piano roll (Notes pane)
 │   │   ├── SamplePicker.tsx     # Sample/synth selection
 │   │   ├── Recorder.tsx         # Mic recording UI
 │   │   ├── Waveform.tsx         # Audio waveform display
@@ -485,7 +486,6 @@ app/
 │   │   ├── ToastNotification.tsx # Join/leave notifications
 │   │   ├── SessionName.tsx      # Editable session name
 │   │   ├── BottomSheet.tsx      # Mobile drawer component
-│   │   ├── InlineDrawer.tsx     # Parameter editing drawer
 │   │   ├── FloatingAddButton.tsx # Add track button
 │   │   └── ErrorBoundary.tsx    # React error boundary
 │   │

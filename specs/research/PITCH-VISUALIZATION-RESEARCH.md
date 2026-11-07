@@ -1,5 +1,9 @@
 # Research: Pitch Visualization & Musical Context
 
+> **Planned dock companion (October 2026):** The Phase31H status, research findings and alternatives below remain unchanged. [PIANO-ROLL-DOCK.md](../PIANO-ROLL-DOCK.md) specifies a proposed successor with contiguous rows, one desktop dock/expanded landscape editor and retained Notes mount/H/scroll while meaningful Step/Track details occupy the same body budget. It does not turn historical research options into shipped behaviour.
+>
+> Dock-specific requirements retain97 absolute MIDI rows, a fixed effective-lock contour and active+enabled-ghost fractional Fit comparison up to H36, with initial/track-switch Fit capped18 and deferred until first Notes. Initial Step minimally reveals pitch at existing H; resize Fit reads new body height. Centred note/ghost proportions and constant outlines survive volume0/overview; recommended-range bracket/grid cues leave key-label contrast and audition intact. Step and Notes-toolbar loop alternatives are32px desktop/44px mobile. The landscape status16 timeline, cursor title and hidden live context add no body-height cost. Existing musical/capability/read-only semantics and general quality standards remain authoritative for production rollout.
+
 > **Status:** ✅ Complete (Phase 31H)
 >
 > **Implemented:**

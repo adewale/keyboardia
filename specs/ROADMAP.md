@@ -51,6 +51,7 @@
 | 40 | Session Provenance | Family tree visualization | KV | — |
 | 41 | Public API | Authenticated API access for integrations | All | — |
 | 42 | Admin Dashboard & Operations | Orphan cleanup, metrics, alerts | All | — |
+| 45 | Piano roll editor dock | One editor dock under the grid; two-line 134px control block | — | 🟡 On branch |
 
 ---
 
@@ -3601,6 +3602,19 @@ represented as shipped.
 Per-instrument derived room defaults are the best next engine candidate;
 automatic device tiers remain blocked on dropout/voice-steal observability and
 a physical-device calibration matrix.
+
+### Phase 45: Piano Roll Editor Dock 🟡 Implemented on Branch
+
+Replace the per-track pitch panel with one editor dock under the sea of cells,
+and shrink the track control column from 508px to a 134px two-line block. The
+design, decisions, and the deviations as built live in
+[`PIANO-ROLL-DOCK.md`](./PIANO-ROLL-DOCK.md), including its Implementation
+notes. Its phases 2 to 7 are on branch `claude/serene-ritchie-q34pf5`: the
+dock shell, the two-line block, `PianoRollEditor`, ghost notes and pitch
+contour marks, and the Step and Track panes. The loop ruler moved into the
+grid on the shared step geometry. Phase 8 (the landscape dock) is in progress,
+and visual baselines are pending. The playback reorder fragility from lesson 62
+is fixed (lesson 84).
 
 ---
 

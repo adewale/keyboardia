@@ -894,15 +894,14 @@ export function getPlayheadIndex(currentStep: number, maxStepCount: number): num
     prevention: [
       'ALWAYS use getPlayheadIndex() utility for step-to-UI comparisons',
       'Add PBT tests that verify: ∀ currentStep, maxStepCount: result ∈ [0, maxStepCount)',
-      'When adding new step-based UI components, copy pattern from TrackRow/ChromaticGrid',
+      'When adding new step-based UI components, copy pattern from TrackRow/PianoRollEditor',
       'Review: grep -rn "currentStep ===" src/components/ | grep -v "%"',
       'Test with 16-step tracks and let playback run past step 16',
     ],
     relatedFiles: [
       'src/components/PitchOverview.tsx',    // Bug location (now fixed)
       'src/components/TrackRow.tsx',          // Correct implementation
-      'src/components/ChromaticGrid.tsx',     // Correct implementation
-      'src/components/PianoRoll.tsx',         // Correct implementation
+      'src/components/PianoRollEditor.tsx',   // Correct implementation
       'src/utils/playhead.ts',                // Utility (to be created)
     ],
     testFile: 'src/utils/playhead.property.test.ts',

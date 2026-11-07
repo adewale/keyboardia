@@ -91,6 +91,9 @@ Debugging war stories and insights from building Keyboardia.
 - [Lesson 80: Duplication Usually Means Ownership Is Unclear](#lesson-80-duplication-usually-means-ownership-is-unclear)
 - [Lesson 81: A Completeness Test Must Discover What It Claims to Cover](#lesson-81-a-completeness-test-must-discover-what-it-claims-to-cover)
 - [Lesson 82: A Quality Gate Must Fail Closed on What It Cannot See](#lesson-82-a-quality-gate-must-fail-closed-on-what-it-cannot-see)
+- [Lesson 83: Retry Reasons Must Share One Attempt Budget](#lesson-83-retry-reasons-must-share-one-attempt-budget)
+- [Lesson 84: A Drop Target Must Accept on dragenter, Not Just dragover](#lesson-84-a-drop-target-must-accept-on-dragenter-not-just-dragover)
+- [Lesson 85: Every Per-Step Surface Goes Through One Geometry Helper](#lesson-85-every-per-step-surface-goes-through-one-geometry-helper)
 
 ### Performance / Configuration
 - [Lesson 19: Phantom Test Failures from Config Discrepancies](#lesson-19-phantom-test-failures-from-config-discrepancies)
@@ -5803,6 +5806,18 @@ Layout changes have to be checked against every state that renders the layout,
 not just the state the new control appears in. The template that carries a new
 control now sits behind a modifier class that only the rows rendering it carry.
 
+### Resolved (October 2026)
+
+The fragility this lesson says "is still there" was found and fixed in the
+two-line control block change (`e983cf7`), and the explanation above was wrong:
+there is no auto-scroll during playback. The row wrapper accepted the drag only
+on `dragover`. When the playhead indicator appeared in or left the step cell
+under a still cursor, the browser re-targeted the drag with `dragenter` only,
+so a release in that instant dropped nothing. The 508px centre happened to sit
+outside an indicator, which is why width looked load-bearing. The row now
+accepts the drag on `dragenter` too, and `.track-left` is 134px. See
+[Lesson 84](#lesson-84-a-drop-target-must-accept-on-dragenter-not-just-dragover).
+
 ---
 
 ## Lesson 63: A Component Fixture Must Reproduce Production Asset Order
@@ -6980,3 +6995,151 @@ The existing required CI job still executes all three groups, while T0 avoids
 native-render and verification-tooling work. PCM tests reuse a capture fixture
 instead of repeatedly rebuilding it. No mutation campaign, extra scheduled
 job, browser matrix, or timeout increase was added during this readiness pass.
+
+---
+
+## Lesson 84: A Drop Target Must Accept on dragenter, Not Just dragover
+
+**Date:** October 2026
+
+**Context:** Piano roll dock, phase 3: the two-line control block
+([`specs/PIANO-ROLL-DOCK.md`](../specs/PIANO-ROLL-DOCK.md)), commit `e983cf7`
+
+### What happened
+
+The two-line control block narrows `.track-left` from 508px to 134px. Lesson 62
+said that changing this width breaks "reorder during playback" and that the
+cause, a drag/auto-scroll interaction, "is still there". The spec therefore
+required a fix or a fence before the width could change.
+
+Lesson 62's measurements were right: 13 of 13 runs passed at 508px and 5 of 18
+at 548px. Its explanation was wrong. Nothing scrolls during playback; the app
+has no auto-scroll. What changes under a still cursor is the step cell's
+contents. A `StepCell` renders a `.playing-indicator` element (inset 4px inside
+the cell) only while it is the playing step, so as the playhead moves, the
+indicator appears under the cursor and then leaves it.
+
+When the element under the cursor changes, the browser re-targets the drag
+with `dragleave` and `dragenter` only. The next `dragover` comes later. The
+row wrapper in `TrackRow.tsx` cancelled `dragover` but not `dragenter`, and an
+uncancelled `dragenter` sets the drag operation to none. A release in that
+instant ended the drag with no `drop` event, and the order came back unchanged.
+
+Width mattered only because the test drops on the wrapper's horizontal centre,
+and the width moves that centre. At 508px the centre fell outside an indicator.
+At 548px it fell inside one. Width was never the cause.
+
+### Why
+
+Every theory in lesson 62 was argued from layout because width was the
+variable that had been changed, and bisecting on width gave a clean signal. A
+clean signal from bisection names the variable that moves the symptom, not the
+mechanism. The mechanism was in event dispatch, and only reading which events
+fire when the hit-test target changes under a stationary pointer exposed it.
+
+### The rule
+
+**A drop target must accept on `dragenter` as well as `dragover` when anything
+under the cursor can re-render during the drag. Width is never the fix.**
+
+The test now holds the condition that exposed the bug instead of avoiding it.
+"reorders while the transport is playing" in `track-reorder.spec.ts` measures
+the drop point once before the drag, as a person aims, and asserts that the
+point is inside a `.step-cell` before dropping. Before the row cancelled
+`dragenter`, this failed about one run in four. The 508 to 134px change was then
+re-validated by running the reorder specs repeatedly against a real Worker.
+The commit does not record that run count. Record it next time, because a
+green run at one-in-four odds proves little.
+
+### Files Changed
+
+- `app/src/components/TrackRow.tsx`: `handleDragEnter` cancels `dragenter` and
+  sets `dropEffect`; the row wrapper binds it with `onDragEnter`.
+- `app/e2e/track-reorder.spec.ts`: the playback reorder test, with its
+  drop-inside-a-cell precondition.
+- `app/src/components/TrackRow.css`: the `.track-left` invariant comment now
+  states the cause, not the width.
+
+---
+
+## Lesson 85: Every Per-Step Surface Goes Through One Geometry Helper
+
+**Date:** October 2026
+
+**Context:** Piano roll dock, loop ruler and roll
+([`specs/PIANO-ROLL-DOCK.md`](../specs/PIANO-ROLL-DOCK.md)), commits `3dc6868`
+and `a50fda1`
+
+### What happened
+
+The step rows place an 8px page gap after every 16th cell
+(`.step-cell.page-end` in `StepCell.css`). The interactive prototype
+(`specs/mocks/piano-roll-dock.html`) does not: it draws everything at
+`step * 39px`. The new piano roll and the loop ruler were ported from the
+prototype, so step 17 in the rows sat 8px right of the ruler's page 2 mark and
+of the roll's 17th column.
+
+The first fix (`3dc6868`) went the wrong way. It added a desktop rule to
+`StepSequencer.css` that set `margin-right: 0` on `.step-cell.page-end` and
+`.chromatic-cell.page-end` inside `.tracks`, removing the page gap from the
+grid so the new surfaces would line up. The alignment tests passed, because
+they compared the new surfaces with a grid that had been changed to match
+them. The page gap is part of the grid's rhythm (the spec's Layout Principles,
+Repetition), and it still applied on mobile, so the grid had two rhythms.
+
+The second fix (`a50fda1`) put the gap back and moved the geometry into one
+pure module, `app/src/components/step-geometry.ts`:
+
+- `stepToX(step, g)` is `step * stepPitch + floor(step / stepsPerPage) * pageGap`.
+- `xToStep(x, g)` is its inverse. A point inside the page gap maps to the last
+  step of the page before it.
+- `spanWidth(start, len, g)` is the width of a run from its first cell's left
+  edge to its last cell's right edge. A note bar that crosses a page boundary
+  spans the gap, so `len * 39 - 3` is wrong for it.
+- `gridWidth(stepCount, g)` sizes the ruler strip and the roll.
+- `DESKTOP_STEP_GEOMETRY` (39px pitch) and `MOBILE_STEP_GEOMETRY` (47px) both
+  carry the 8px gap and 16 steps per page.
+
+`LoopRuler.tsx` places its marks, region, brackets, Shift+click marker and
+playhead with `stepToX`, and maps pointer positions with `xToStep`.
+`PianoRollEditor.tsx` uses the same functions for its bars, ghost bars, hover
+and selected columns, loop shading, playhead, tooltip and hit layer. It draws
+each column line as an element at its cell's left edge, because the page gap
+makes the step pitch non-uniform and a repeating gradient can no longer draw
+it. `ChromaticGrid.css` moved its page gap from 6px to 8px to match.
+
+### Why
+
+The prototype was treated as the source of truth for geometry, and it was
+right about everything it drew except the one rule it left out. When a new
+surface disagreed with the shipped grid, the grid was the cheaper thing to
+change, because one CSS rule fixed it. That rule changed the rhythm of every
+row to fit a ruler.
+
+### The rule
+
+**Every surface that places something by step index goes through the one
+geometry helper, including the page gap. Never restyle the grid to fit a new
+surface.** If a new surface disagrees with the cells, the new surface is wrong.
+
+Two surfaces still break this rule and should move onto the helper:
+
+- The legacy `PitchContour` SVG in `ChromaticGrid.tsx` places its points at
+  `i * 39`.
+- `VelocityLane` lays out its `.velocity-step` elements with a uniform 3px gap
+  and no page gap, so its bars after step 16 sit 8px left of their cells.
+
+### Files Changed
+
+- `app/src/components/step-geometry.ts` and `step-geometry.test.ts` (new): the
+  helper, with round-trip, gap ownership and width tests.
+- `app/src/components/LoopRuler.tsx`, `LoopRuler.css`: placement through the
+  helper. The 47px mobile pitch follows a `matchMedia` query.
+- `app/src/components/PianoRollEditor.tsx`, `PianoRollEditor.css`: placement,
+  column lines and `.page-gap` bands through the helper.
+- `app/src/components/StepSequencer.css`: the rule that zeroed the page gap is
+  gone.
+- `app/src/components/ChromaticGrid.css`: page gap 8px.
+- `app/e2e/piano-roll-dock.spec.ts`: on a 48-step fixture, the page 2 and page
+  3 marks equal the x of step 17's and step 33's cells, the roll's notes and
+  the roll's columns, before and after horizontal scroll.

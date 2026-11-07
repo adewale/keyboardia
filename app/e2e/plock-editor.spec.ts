@@ -1,4 +1,4 @@
-import { test, expect, getBaseUrl, useMockAPI } from './global-setup';
+import { test, expect, getBaseUrl, useMockAPI, type Page } from './global-setup';
 import { createSessionWithRetry } from './test-utils';
 
 const API_BASE = getBaseUrl();
@@ -6,13 +6,18 @@ const API_BASE = getBaseUrl();
 /**
  * P-lock (parameter lock) editor tests
  *
- * The p-lock editor appears when Shift+clicking an active step.
- * Uses Playwright best practices with proper waits.
+ * Shift+click on an active step opens the editor dock's Step pane for that
+ * step (specs/PIANO-ROLL-DOCK.md, phase 6). The ParameterLockEditor renders in
+ * the dock's toolbar, not in a strip between rows. Uses Playwright best
+ * practices with proper waits.
  *
- * It should close when:
- * 1. Clicking outside the editor
- * 2. Clicking the same step again (toggle)
- * 3. Shift+clicking a different step (switches to that step)
+ * The Step pane leaves when:
+ * 1. Escape is pressed (back to Notes; a drum track, which has no Notes,
+ *    closes the dock)
+ * 2. The same step is Shift+clicked again (toggle)
+ * 3. The Notes chip is clicked
+ * and it switches when a different step is Shift+clicked. It no longer
+ * closes on a click elsewhere.
  */
 
 /**
@@ -31,6 +36,17 @@ async function createTestSession(request: Parameters<typeof createSessionWithRet
         id: 'test-track-1',
         name: 'Kick',
         sampleId: 'kick',
+        steps,
+        parameterLocks: Array(128).fill(null),
+        volume: 1,
+        muted: false,
+        transpose: 0,
+        stepCount: 16,
+      },
+      {
+        id: 'test-track-2',
+        name: 'Lead',
+        sampleId: 'synth:lead',
         steps,
         parameterLocks: Array(128).fill(null),
         volume: 1,
@@ -61,11 +77,18 @@ test.describe('P-lock editor', () => {
       await expect(page.locator('.connection-status--connected')).toBeVisible({ timeout: 10000 });
     }
 
-    // Wait for track to appear
-    await expect(page.locator('.track-row')).toBeVisible({ timeout: 5000 });
+    // Wait for the tracks to appear
+    await expect(page.locator('.track-row')).toHaveCount(2, { timeout: 5000 });
   });
 
-  test('should open p-lock editor on Shift+click of active step', async ({ page }) => {
+  const dock = (page: Page) => page.getByTestId('editor-dock');
+  const plockEditor = (page: Page) => dock(page).locator('.plock-inline');
+  const paneChip = (page: Page, name: string) => dock(page)
+    .getByRole('group', { name: 'Dock pane' })
+    .getByRole('button', { name, exact: true });
+  const leadStep = (page: Page, index: number) => page.locator('.track-row').nth(1).locator('.step-cell').nth(index);
+
+  test('should open the Step pane on Shift+click of an active step', async ({ page }) => {
     // Get the first step cell and activate it
     const firstStep = page.locator('.step-cell').first();
     await firstStep.click();
@@ -73,35 +96,68 @@ test.describe('P-lock editor', () => {
     // Verify step is now active
     await expect(firstStep).toHaveClass(/active/);
 
-    // Shift+click to open p-lock editor
+    // Shift+click to open the dock's Step pane
     await firstStep.click({ modifiers: ['Shift'] });
 
-    // Verify p-lock editor is visible
-    const plockEditor = page.locator('.plock-inline');
-    await expect(plockEditor).toBeVisible({ timeout: 2000 });
+    await expect(dock(page)).toHaveClass(/\bopen\b/);
+    await expect(dock(page)).toHaveAttribute('data-pane', 'step');
+    await expect(paneChip(page, 'Step')).toHaveAttribute('aria-pressed', 'true');
+    await expect(plockEditor(page)).toBeVisible({ timeout: 2000 });
 
-    // Verify it shows the step number
-    await expect(plockEditor.locator('.plock-step')).toContainText('Step 1');
+    // It names the step and the track; the cell keeps its selection ring.
+    await expect(plockEditor(page).locator('.plock-step')).toContainText('Step 1');
+    await expect(dock(page).locator('.dock-title')).toContainText('Kick');
+    await expect(dock(page).locator('.dock-title')).toContainText('step 1');
+    await expect(firstStep).toHaveClass(/selected/);
+
+    // No strip opens between the rows.
+    await expect(page.locator('.track-row-wrapper .plock-inline')).toHaveCount(0);
   });
 
-  test('should close p-lock editor when clicking outside', async ({ page }) => {
-    // Activate a step
+  test('stays open on a click elsewhere; Escape leaves it', async ({ page }) => {
     const firstStep = page.locator('.step-cell').first();
     await firstStep.click();
-
-    // Open p-lock editor
     await firstStep.click({ modifiers: ['Shift'] });
-    const plockEditor = page.locator('.plock-inline');
-    await expect(plockEditor).toBeVisible({ timeout: 2000 });
+    await expect(plockEditor(page)).toBeVisible({ timeout: 2000 });
 
-    // Wait for the click-outside listener to be added (50ms delay in component)
-    await page.waitForTimeout(100);
-
-    // Click outside (on the header area)
+    // The strip closed on an outside click; the Step pane is a pane, not a popover.
     await page.locator('.app-header').click();
+    await expect(plockEditor(page)).toBeVisible();
 
-    // Verify p-lock editor is hidden using web-first assertion
-    await expect(plockEditor).not.toBeVisible({ timeout: 2000 });
+    // Escape with focus in the pane leaves it. A drum track has no Notes,
+    // so the dock closes.
+    await plockEditor(page).locator('.plock-slider.pitch').focus();
+    await page.keyboard.press('Escape');
+    await expect(plockEditor(page)).not.toBeVisible({ timeout: 2000 });
+    await expect(dock(page)).not.toHaveClass(/\bopen\b/);
+  });
+
+  test('Escape on the grid leaves the Step pane', async ({ page }) => {
+    const step = leadStep(page, 4);
+    await step.click({ modifiers: ['Shift'] });
+    await expect(plockEditor(page)).toBeVisible({ timeout: 2000 });
+    await step.focus();
+
+    await page.keyboard.press('Escape');
+    // A melodic track goes back to Notes, the dock stays open.
+    await expect(plockEditor(page)).not.toBeVisible({ timeout: 2000 });
+    await expect(dock(page)).toHaveClass(/\bopen\b/);
+    await expect(dock(page)).toHaveAttribute('data-pane', 'notes');
+    await expect(step).not.toHaveClass(/selected/);
+  });
+
+  test('Escape inside the dock steps back to Notes, then closes', async ({ page }) => {
+    await leadStep(page, 4).click({ modifiers: ['Shift'] });
+    await expect(plockEditor(page)).toBeVisible({ timeout: 2000 });
+    await plockEditor(page).locator('.plock-slider.volume').focus();
+
+    await page.keyboard.press('Escape');
+    await expect(dock(page)).toHaveAttribute('data-pane', 'notes');
+    // Focus stays in the dock, on the pane now showing.
+    await expect(paneChip(page, 'Notes')).toBeFocused();
+
+    await page.keyboard.press('Escape');
+    await expect(dock(page)).not.toHaveClass(/\bopen\b/);
   });
 
   test('should close p-lock editor when clicking same step again', async ({ page }) => {
@@ -111,14 +167,14 @@ test.describe('P-lock editor', () => {
 
     // Open p-lock editor
     await firstStep.click({ modifiers: ['Shift'] });
-    const plockEditor = page.locator('.plock-inline');
-    await expect(plockEditor).toBeVisible({ timeout: 2000 });
+    await expect(plockEditor(page)).toBeVisible({ timeout: 2000 });
 
     // Shift+click same step again to toggle closed
     await firstStep.click({ modifiers: ['Shift'] });
 
     // Verify p-lock editor is hidden
-    await expect(plockEditor).not.toBeVisible({ timeout: 2000 });
+    await expect(plockEditor(page)).not.toBeVisible({ timeout: 2000 });
+    await expect(firstStep).not.toHaveClass(/selected/);
   });
 
   test('should switch p-lock editor to different step on Shift+click', async ({ page }) => {
@@ -131,16 +187,31 @@ test.describe('P-lock editor', () => {
 
     // Open p-lock editor on first step
     await firstStep.click({ modifiers: ['Shift'] });
-    const plockEditor = page.locator('.plock-inline');
-    await expect(plockEditor).toBeVisible({ timeout: 2000 });
-    await expect(plockEditor.locator('.plock-step')).toContainText('Step 1');
+    await expect(plockEditor(page)).toBeVisible({ timeout: 2000 });
+    await expect(plockEditor(page).locator('.plock-step')).toContainText('Step 1');
 
     // Shift+click second step - should switch to it
     await secondStep.click({ modifiers: ['Shift'] });
 
     // Editor should still be visible but showing step 2
-    await expect(plockEditor).toBeVisible();
-    await expect(plockEditor.locator('.plock-step')).toContainText('Step 2');
+    await expect(plockEditor(page)).toBeVisible();
+    await expect(plockEditor(page).locator('.plock-step')).toContainText('Step 2');
+    await expect(secondStep).toHaveClass(/selected/);
+    await expect(firstStep).not.toHaveClass(/selected/);
+  });
+
+  test('a step on another track switches the dock to that track', async ({ page }) => {
+    const firstStep = page.locator('.step-cell').first();
+    await firstStep.click();
+    await firstStep.click({ modifiers: ['Shift'] });
+    await expect(dock(page).locator('.dock-title b')).toHaveText('Kick');
+
+    await leadStep(page, 8).click({ modifiers: ['Shift'] });
+    await expect(dock(page).locator('.dock-title b')).toHaveText('Lead');
+    await expect(plockEditor(page).locator('.plock-step')).toContainText('Step 9');
+    await expect(page.locator('.track-row-wrapper.docked')).toHaveCount(1);
+    // The roll highlights the selected column.
+    await expect(dock(page).locator('.piano-roll-editor .sel-col')).toBeVisible();
   });
 
   test('clear action is named and restores focus to the invoking step @blocking', async ({ page }) => {
@@ -148,39 +219,33 @@ test.describe('P-lock editor', () => {
     await firstStep.click();
     await firstStep.click({ modifiers: ['Shift'] });
 
-    const plockEditor = page.locator('.plock-inline');
-    await expect(plockEditor).toBeVisible({ timeout: 2000 });
+    await expect(plockEditor(page)).toBeVisible({ timeout: 2000 });
 
-    await plockEditor.locator('.plock-slider.pitch').fill('5');
+    await plockEditor(page).locator('.plock-slider.pitch').fill('5');
     const clearButton = page.getByRole('button', { name: 'Clear lock' });
     await expect(clearButton).toBeVisible();
     await clearButton.focus();
     await expect(clearButton).toBeFocused();
 
     await clearButton.click();
-    await expect(plockEditor).not.toBeVisible({ timeout: 2000 });
+    await expect(plockEditor(page)).not.toBeVisible({ timeout: 2000 });
     await expect(firstStep).toBeFocused();
   });
 
-  test('outside dismissal does not steal focus back to the invoking step @blocking', async ({ page }) => {
-    const firstStep = page.locator('.step-cell').first();
-    await firstStep.click();
-    await firstStep.click({ modifiers: ['Shift'] });
+  test('the Notes chip leaves the Step pane without stealing focus back to the step @blocking', async ({ page }) => {
+    const step = leadStep(page, 4);
+    await step.click({ modifiers: ['Shift'] });
 
-    const plockEditor = page.locator('.plock-inline');
-    await expect(plockEditor).toBeVisible({ timeout: 2000 });
-    await plockEditor.locator('.plock-slider.pitch').focus();
-    // The editor deliberately delays click-outside registration by 50ms so
-    // the pointer event that opened it cannot immediately close it.
-    await page.waitForTimeout(75);
+    await expect(plockEditor(page)).toBeVisible({ timeout: 2000 });
+    await plockEditor(page).locator('.plock-slider.pitch').focus();
 
-    const copyButton = page.getByRole('button', { name: 'Copy' }).first();
-    await copyButton.click();
+    await paneChip(page, 'Notes').click();
 
-    await expect(plockEditor).not.toBeVisible({ timeout: 2000 });
+    await expect(plockEditor(page)).not.toBeVisible({ timeout: 2000 });
+    await expect(dock(page)).toHaveAttribute('data-pane', 'notes');
     // Safari intentionally does not focus buttons on pointer click, so the
     // cross-browser invariant is that focus is not stolen back to the step.
-    await expect(firstStep).not.toBeFocused();
+    await expect(step).not.toBeFocused();
   });
 
   // NOTE: "tooltip should show pitch and volume values on hover" test was removed.
@@ -195,24 +260,20 @@ test.describe('P-lock editor', () => {
 
     // Open p-lock editor
     await firstStep.click({ modifiers: ['Shift'] });
-    const plockEditor = page.locator('.plock-inline');
-    await expect(plockEditor).toBeVisible({ timeout: 2000 });
+    await expect(plockEditor(page)).toBeVisible({ timeout: 2000 });
 
     // Change pitch to +5
-    const pitchSlider = plockEditor.locator('.plock-slider.pitch');
+    const pitchSlider = plockEditor(page).locator('.plock-slider.pitch');
     await pitchSlider.fill('5');
 
     // Change volume to 50%
-    const volumeSlider = plockEditor.locator('.plock-slider.volume');
+    const volumeSlider = plockEditor(page).locator('.plock-slider.volume');
     await volumeSlider.fill('50');
 
-    // Close editor by clicking outside
-    // NOTE: The click-outside handler has a 50ms delay before attaching,
-    // and it resets on each render (due to onDismiss dependency).
-    // Wait for the listener to be attached after the last slider interaction.
-    await page.waitForTimeout(100);
-    await page.locator('.app-header').click();
-    await expect(plockEditor).not.toBeVisible({ timeout: 2000 });
+    // Leave the Step pane
+    await volumeSlider.focus();
+    await page.keyboard.press('Escape');
+    await expect(plockEditor(page)).not.toBeVisible({ timeout: 2000 });
 
     // Verify tooltip shows the new values
     const title = await firstStep.getAttribute('title');

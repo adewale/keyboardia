@@ -91,6 +91,46 @@ test.describe('Track reorder browser contract', () => {
     expect(new Set(stableOrder)).toEqual(new Set(initial));
   });
 
+  // Lesson 62: a drag released while the transport plays. The drop lands on
+  // the target wrapper's centre, measured once before the drag, the way a
+  // person aims. That point must sit inside a step cell, where the playhead
+  // indicator appears and disappears under the still cursor: the browser then
+  // re-targets the drag with dragenter only, and a row that cancelled only
+  // dragover lost the drop. Before the row cancelled dragenter this failed
+  // about one run in four, and whether it failed depended on the row's width.
+  test('reorders while the transport is playing', async ({ page }) => {
+    const initial = await getTrackNames(page);
+    const expected = [initial[1], initial[2], initial[0]];
+
+    const play = page.locator('[data-testid="play-button"]');
+    await play.click();
+    await expect(play).toHaveClass(/(^|\s)playing(\s|$)/);
+
+    const handle = page.locator('.track-drag-handle').first();
+    const target = page.locator('.track-row-wrapper').nth(2);
+    const handleBox = await handle.boundingBox();
+    const targetBox = await target.boundingBox();
+    if (!handleBox || !targetBox) throw new Error('Drag source or target has no layout box');
+    const drop = { x: targetBox.x + targetBox.width / 2, y: targetBox.y + targetBox.height / 2 };
+    const dropsOnStepCell = await page.evaluate(
+      ({ x, y }) => !!document.elementFromPoint(x, y)?.closest('.step-cell'),
+      drop,
+    );
+    expect(dropsOnStepCell, 'the drop point must be inside a step cell').toBe(true);
+
+    await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + handleBox.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(drop.x, drop.y, { steps: 5 });
+    await page.mouse.up();
+
+    await expectTrackOrder(page, expected);
+    await expect(page.locator('.track-row-wrapper.dragging, .track-row-wrapper.drag-target'))
+      .toHaveCount(0);
+
+    await play.click();
+    await expect(play).not.toHaveClass(/(^|\s)playing(\s|$)/);
+  });
+
   test('marks only the active track as dragging and clears it on release', async ({ page }) => {
     const handle = page.locator('.track-drag-handle').first();
     const box = await handle.boundingBox();
