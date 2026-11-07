@@ -14,17 +14,17 @@ env:
 jobs:
   randomized-properties:
     name: Unit tests with a rotating fast-check seed
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     defaults:
       run:
         working-directory: ./app
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
@@ -54,8 +54,9 @@ jobs:
 
       - name: Upload PR-able unit counterexample promotion
         if: steps.unit_properties.outcome == 'failure'
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
+          retention-days: 7
           name: pbt-unit-counterexample-${{ github.run_id }}
           path: |
             ${{ runner.temp }}/pbt-known-failures.patch
@@ -67,17 +68,17 @@ jobs:
 
   integration-fuzz-rotating-seed:
     name: Integration fuzz lanes with a rotating soak seed
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     defaults:
       run:
         working-directory: ./app
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
@@ -123,8 +124,9 @@ jobs:
 
       - name: Upload PR-able integration counterexample promotion
         if: steps.integration_properties.outcome == 'failure'
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
+          retention-days: 7
           name: pbt-integration-counterexample-${{ github.run_id }}
           path: |
             ${{ runner.temp }}/pbt-known-failures.patch
