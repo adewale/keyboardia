@@ -1,4 +1,6 @@
 // @vitest-environment jsdom
+import { act, renderHook } from '@testing-library/react';
+import { useMultiplayerSync } from '../hooks/useMultiplayer';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ParameterLock, Track } from '../types';
 import {
@@ -56,6 +58,41 @@ describe('dedicated multiplayer senders', () => {
     sendBatchClearSteps('track-1', []);
     sendBatchSetParameterLocks('track-1', []);
 
+    expect(send).not.toHaveBeenCalled();
+  });
+});
+
+describe('dedicated routes through the returned UI hook', () => {
+  it('sends each connected route, suppresses empty batches and follows connection changes', () => {
+    const send = vi.spyOn(multiplayer, 'send').mockImplementation(() => {});
+    const {result, rerender} = renderHook(({connected}) => useMultiplayerSync(connected), {
+      initialProps: {connected: false},
+    });
+    const locks = [{step:1,lock:{volume:.75}}];
+    const invokeRoutes = () => act(() => {
+      result.current.handleTrackAdded(track);
+      result.current.handleTrackReorder(track.id, 3);
+      result.current.handleBatchClearSteps(track.id, [1]);
+      result.current.handleBatchSetParameterLocks(track.id, locks);
+    });
+    invokeRoutes();
+    expect(send).not.toHaveBeenCalled();
+    rerender({connected:true});
+    invokeRoutes();
+    expect(send.mock.calls.map(([message]) => message)).toEqual([
+      {type:'add_track',track},
+      {type:'reorder_tracks',trackId:track.id,toIndex:3},
+      {type:'batch_clear_steps',trackId:track.id,steps:[1]},
+      {type:'batch_set_parameter_locks',trackId:track.id,locks},
+    ]);
+    send.mockClear();
+    act(() => {
+      result.current.handleBatchClearSteps(track.id, []);
+      result.current.handleBatchSetParameterLocks(track.id, []);
+    });
+    expect(send).not.toHaveBeenCalled();
+    rerender({connected:false});
+    invokeRoutes();
     expect(send).not.toHaveBeenCalled();
   });
 });
