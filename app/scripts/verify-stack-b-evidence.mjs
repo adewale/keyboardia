@@ -32,10 +32,6 @@ function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
-const stackBManifest = readFileSync(resolve(appRoot, 'identity/stack-b-manifest.ts'), 'utf8');
-const migrationBase = stackBManifest.match(/STACK_B_MIGRATION_BASE_SHA = '([\da-f]{40})'/)?.[1];
-assert(migrationBase, 'Unable to read the Stack B migration base');
-
 const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
 assert(manifest.schemaVersion === 1, 'Unsupported Stack B approval manifest schema');
 assert(manifest.generator?.name === 'app/scripts/finalize-stack-b-evidence.mjs', 'Unexpected evidence finalizer');
@@ -99,6 +95,9 @@ assert(readme.includes(manifest.headRevision), 'Evidence README omits the candid
 const candidateExists = spawnSync('git', ['cat-file', '-e', `${manifest.headRevision}^{commit}`],
   {cwd: repoRoot, stdio: 'ignore'});
 assert(candidateExists.status === 0, 'The recorded candidate source revision is unavailable');
+const recordedBase = spawnSync('git', ['merge-base', '--is-ancestor', manifest.baseRevision, manifest.headRevision],
+  {cwd: repoRoot, stdio: 'ignore'});
+assert(recordedBase.status === 0, 'The recorded base is unavailable or not an ancestor of the captured candidate');
 const isAncestor = spawnSync('git', ['merge-base', '--is-ancestor', manifest.headRevision, 'HEAD'],
   {cwd: repoRoot, stdio: 'ignore'});
 assert(isAncestor.status === 0, 'The recorded candidate source revision is not an ancestor of HEAD');
