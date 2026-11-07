@@ -154,12 +154,23 @@ describe('Cloudflare Agent Skills discovery', () => {
       }>;
     };
     const editTool = fixture.tools.find(({ name }) => name === 'edit_session');
-    const operations = editTool?.inputSchema?.properties?.edit?.oneOf
-      ?.map((branch) => branch.properties?.operation?.const)
-      .filter((operation): operation is string => typeof operation === 'string') ?? [];
+    const operations: string[] = [];
+    const collectOperations = (value: unknown): void => {
+      if (Array.isArray(value)) {
+        value.forEach(collectOperations);
+        return;
+      }
+      if (!value || typeof value !== 'object') return;
+      const record = value as Record<string, unknown>;
+      const properties = record.properties as Record<string, unknown> | undefined;
+      const operation = properties?.operation as Record<string, unknown> | undefined;
+      if (typeof operation?.const === 'string') operations.push(operation.const);
+      Object.values(record).forEach(collectOperations);
+    };
+    collectOperations(editTool?.inputSchema);
 
     expect(operations.length).toBeGreaterThan(0);
-    for (const operation of operations) {
+    for (const operation of new Set(operations)) {
       expect(
         skill.includes('`' + operation + '`') || skill.includes('"operation": "' + operation + '"'),
         `SKILL.md omits a live edit operation: ${operation}`,

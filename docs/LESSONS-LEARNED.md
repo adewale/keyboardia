@@ -6980,3 +6980,35 @@ The existing required CI job still executes all three groups, while T0 avoids
 native-render and verification-tooling work. PCM tests reuse a capture fixture
 instead of repeatedly rebuilding it. No mutation campaign, extra scheduled
 job, browser matrix, or timeout increase was added during this readiness pass.
+
+---
+
+## Lesson 84: Rebase the Ownership Model, Not Just the Conflict Markers
+
+**Date:** 3 October 2026
+
+PR #87's authoring branch carried an older verification selector, pre-push
+policy, native-render split, and test counts. Main had since merged PRs #117
+and #124, and pending PR #123 proposed a more complete heavy-lane split that
+also catches the differently named instrument-range render. Replaying all
+branch tooling would replace newer owners with stale parallel authorities.
+
+The reconsidered candidate keeps main's verification and audio runtime intact,
+adds only authoring-specific contracts, regenerates exact lane identities, and
+marks old counts and screenshots as historical. Runtime correctness, exact
+editing, beginner Shape UI, and evidence-gated renderer promotion are distinct
+outcomes; a green authoring build does not complete the latter two.
+
+The rule: resolve a rebase against current ownership and pending related work.
+Name the remaining work and its owner, remeasure the final tree, and never
+reuse an earlier commit's receipts as evidence for the new head. Tests that
+require clean evidence subjects must run after committing, not with their
+clean-tree gate disabled to accommodate an in-progress merge.
+
+**2026-10-19 follow-up:** #122 now incorporates closed PRs #123/#126, and #128
+patches the independent dependency trees. The authoring rebase preserves all
+three test projects rather than restoring its older lane design. The remaining
+collision is product-level: #87's exact editor and #127's piano-roll dock modify
+the same row/editor wiring. Resolve that integration explicitly; another clean
+rebase on main does not prove the two feature branches compose. The old #87 CI
+run is green, but its results are not evidence for the new rebased head.

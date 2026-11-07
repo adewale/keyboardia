@@ -5,7 +5,7 @@ import type {
   SamplePlaybackMode,
   TrackEnvelopeV2,
 } from './envelope-contract-v2';
-import { DEFAULT_TRACK_ENVELOPE_V2 } from './envelope-contract-v2';
+import { activeEnvelopeStages, DEFAULT_TRACK_ENVELOPE_V2 } from './envelope-contract-v2';
 
 export type EnvelopeSustainSource = 'oscillator' | 'finite-buffer' | 'sample-loop' | 'none';
 export type EnvelopeReleaseSource = 'gain-only' | 'source-tail' | 'release-trigger' | 'none';
@@ -173,13 +173,7 @@ export function describeEnvelopeCompatibility(
   playbackMode?: SamplePlaybackMode,
 ): EnvelopeCompatibility {
   const capability = getEnvelopeCapability(sampleId);
-  const activeStages = envelope.model === 'ad'
-    ? ['attack', 'decay'] as const
-    : envelope.model === 'ahd'
-      ? ['attack', 'hold', 'decay'] as const
-      : envelope.model === 'ar'
-        ? ['attack', 'release'] as const
-        : ADSR_STAGES;
+  const activeStages = activeEnvelopeStages(envelope.model);
   const ignoredStages = activeStages.filter(stage => !capability.lockableStages.includes(stage));
   if (!capability.models.includes(envelope.model)) {
     return {

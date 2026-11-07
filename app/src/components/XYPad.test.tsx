@@ -9,7 +9,7 @@ import { XYPad } from './XYPad';
  * Tests cover:
  * - Rendering with correct dimensions
  * - Props handling (x, y, labels, disabled, showLabels)
- * - User interactions (mouse events)
+ * - Pointer and keyboard transactions
  * - Accessibility attributes
  *
  * Note: The XYPadController (audio logic) is tested separately in
@@ -17,7 +17,7 @@ import { XYPad } from './XYPad';
  */
 
 describe('XYPad Component', () => {
-  let mockOnChange: (x: number, y: number) => void;
+  let mockOnChange: ReturnType<typeof vi.fn<(x: number, y: number) => void>>;
 
   beforeEach(() => {
     mockOnChange = vi.fn();
@@ -167,14 +167,14 @@ describe('XYPad Component', () => {
       );
       const pad = container.querySelector('.xy-pad') as HTMLElement;
 
-      fireEvent.mouseDown(pad, { clientX: 50, clientY: 50 });
+      fireEvent.pointerDown(pad, { pointerId: 1, clientX: 50, clientY: 50 });
 
       expect(mockOnChange).not.toHaveBeenCalled();
     });
   });
 
-  describe('mouse interactions', () => {
-    it('calls onChange on mouseDown', () => {
+  describe('pointer interactions', () => {
+    it('previews on pointer-down', () => {
       const { container } = render(
         <XYPad x={0.5} y={0.5} onChange={mockOnChange} size={100} />
       );
@@ -193,7 +193,7 @@ describe('XYPad Component', () => {
         toJSON: () => ({}),
       });
 
-      fireEvent.mouseDown(pad, { clientX: 75, clientY: 25 });
+      fireEvent.pointerDown(pad, { pointerId: 1, clientX: 75, clientY: 25 });
 
       expect(mockOnChange).toHaveBeenCalledWith(0.75, 0.75); // Y inverted
     });
@@ -209,9 +209,169 @@ describe('XYPad Component', () => {
         right: 100, bottom: 100, x: 0, y: 0, toJSON: () => ({}),
       });
 
-      fireEvent.mouseDown(pad, { clientX: 50, clientY: 50 });
+      fireEvent.pointerDown(pad, { pointerId: 1, clientX: 50, clientY: 50 });
 
       expect(pad.classList.contains('dragging')).toBe(true);
+    });
+
+    it('commits exactly once after any number of pointer previews', () => {
+      const onChangeEnd = vi.fn();
+      const { container } = render(
+        <XYPad x={0.5} y={0.5} onChange={mockOnChange} onChangeEnd={onChangeEnd} size={100} />
+      );
+      const pad = container.querySelector('.xy-pad') as HTMLElement;
+      vi.spyOn(pad, 'getBoundingClientRect').mockReturnValue({
+        left: 0, top: 0, width: 100, height: 100,
+        right: 100, bottom: 100, x: 0, y: 0, toJSON: () => ({}),
+      });
+
+      fireEvent.pointerDown(pad, { pointerId: 7, clientX: 10, clientY: 90 });
+      fireEvent.pointerMove(pad, { pointerId: 7, clientX: 40, clientY: 60 });
+      fireEvent.pointerMove(pad, { pointerId: 7, clientX: 80, clientY: 20 });
+      expect(onChangeEnd).not.toHaveBeenCalled();
+      fireEvent.pointerUp(pad, { pointerId: 7, clientX: 80, clientY: 20 });
+
+      expect(onChangeEnd).toHaveBeenCalledOnce();
+      expect(onChangeEnd).toHaveBeenCalledWith(0.8, 0.8);
+    });
+
+    it('commits the last visible draft once when the pointer is cancelled', () => {
+      const onChangeEnd = vi.fn();
+      const onChangeCancel = vi.fn();
+      const { container } = render(
+        <XYPad
+          x={0.25}
+          y={0.75}
+          onChange={mockOnChange}
+          onChangeEnd={onChangeEnd}
+          onChangeCancel={onChangeCancel}
+          size={100}
+        />
+      );
+      const pad = container.querySelector('.xy-pad') as HTMLElement;
+      vi.spyOn(pad, 'getBoundingClientRect').mockReturnValue({
+        left: 0, top: 0, width: 100, height: 100,
+        right: 100, bottom: 100, x: 0, y: 0, toJSON: () => ({}),
+      });
+
+      fireEvent.pointerDown(pad, { pointerId: 9, clientX: 90, clientY: 90 });
+      fireEvent.pointerMove(pad, { pointerId: 9, clientX: 80, clientY: 20 });
+      fireEvent.pointerCancel(pad, { pointerId: 9 });
+      fireEvent.lostPointerCapture(pad, { pointerId: 9 });
+      fireEvent.pointerUp(pad, { pointerId: 9, clientX: 10, clientY: 90 });
+
+      expect(onChangeEnd).toHaveBeenCalledOnce();
+      expect(onChangeEnd).toHaveBeenCalledWith(0.8, 0.8);
+      expect(onChangeCancel).not.toHaveBeenCalled();
+      expect(mockOnChange.mock.calls.at(-1)).toEqual([0.8, 0.8]);
+    });
+
+    it('commits lost capture once and ignores later terminal pointer events', () => {
+      const onChangeEnd = vi.fn();
+      const { container } = render(
+        <XYPad
+          x={0.25}
+          y={0.75}
+          onChange={mockOnChange}
+          onChangeEnd={onChangeEnd}
+          size={100}
+        />
+      );
+      const pad = container.querySelector('.xy-pad') as HTMLElement;
+      vi.spyOn(pad, 'getBoundingClientRect').mockReturnValue({
+        left: 0, top: 0, width: 100, height: 100,
+        right: 100, bottom: 100, x: 0, y: 0, toJSON: () => ({}),
+      });
+
+      fireEvent.pointerDown(pad, { pointerId: 10, clientX: 20, clientY: 80 });
+      fireEvent.pointerMove(pad, { pointerId: 10, clientX: 70, clientY: 30 });
+      fireEvent.lostPointerCapture(pad, { pointerId: 10 });
+      fireEvent.pointerUp(pad, { pointerId: 10, clientX: 90, clientY: 10 });
+      fireEvent.pointerCancel(pad, { pointerId: 10 });
+
+      expect(onChangeEnd).toHaveBeenCalledOnce();
+      expect(onChangeEnd).toHaveBeenCalledWith(0.7, 0.7);
+    });
+
+    it('rolls an active pointer transaction back only on Escape', () => {
+      const onChangeEnd = vi.fn();
+      const onChangeCancel = vi.fn();
+      const { container } = render(
+        <XYPad
+          x={0.25}
+          y={0.75}
+          onChange={mockOnChange}
+          onChangeEnd={onChangeEnd}
+          onChangeCancel={onChangeCancel}
+          size={100}
+        />
+      );
+      const pad = container.querySelector('.xy-pad') as HTMLElement;
+      vi.spyOn(pad, 'getBoundingClientRect').mockReturnValue({
+        left: 0, top: 0, width: 100, height: 100,
+        right: 100, bottom: 100, x: 0, y: 0, toJSON: () => ({}),
+      });
+
+      fireEvent.pointerDown(pad, { pointerId: 11, clientX: 80, clientY: 20 });
+      fireEvent.keyDown(pad, { key: 'Escape' });
+      fireEvent.lostPointerCapture(pad, { pointerId: 11 });
+      fireEvent.pointerUp(pad, { pointerId: 11, clientX: 80, clientY: 20 });
+
+      expect(onChangeEnd).not.toHaveBeenCalled();
+      expect(onChangeCancel).toHaveBeenCalledOnce();
+      expect(onChangeCancel).toHaveBeenCalledWith(0.25, 0.75);
+      expect(mockOnChange.mock.calls.at(-1)).toEqual([0.25, 0.75]);
+    });
+  });
+
+  describe('keyboard interactions', () => {
+    it('maps arrows to axes and commits once on key-up', () => {
+      const onChangeStart = vi.fn();
+      const onChangeEnd = vi.fn();
+      render(
+        <XYPad
+          x={0.5}
+          y={0.5}
+          onChange={mockOnChange}
+          onChangeStart={onChangeStart}
+          onChangeEnd={onChangeEnd}
+        />
+      );
+      const pad = screen.getByRole('slider');
+
+      fireEvent.keyDown(pad, { key: 'ArrowRight' });
+      fireEvent.keyDown(pad, { key: 'ArrowRight', repeat: true });
+      expect(onChangeStart).toHaveBeenCalledOnce();
+      expect(mockOnChange.mock.calls.at(-1)?.[0]).toBeCloseTo(0.52);
+      expect(onChangeEnd).not.toHaveBeenCalled();
+      fireEvent.keyUp(pad, { key: 'ArrowRight' });
+
+      expect(onChangeEnd).toHaveBeenCalledOnce();
+      expect(onChangeEnd.mock.calls[0][0]).toBeCloseTo(0.52);
+      expect(onChangeEnd.mock.calls[0][1]).toBe(0.5);
+    });
+
+    it('uses a coarse Shift step and Escape rollback', () => {
+      const onChangeEnd = vi.fn();
+      const onChangeCancel = vi.fn();
+      render(
+        <XYPad
+          x={0.4}
+          y={0.6}
+          onChange={mockOnChange}
+          onChangeEnd={onChangeEnd}
+          onChangeCancel={onChangeCancel}
+        />
+      );
+      const pad = screen.getByRole('slider');
+
+      fireEvent.keyDown(pad, { key: 'ArrowUp', shiftKey: true });
+      expect(mockOnChange.mock.calls.at(-1)?.[1]).toBeCloseTo(0.7);
+      fireEvent.keyDown(pad, { key: 'Escape' });
+
+      expect(onChangeEnd).not.toHaveBeenCalled();
+      expect(onChangeCancel).toHaveBeenCalledWith(0.4, 0.6);
+      expect(mockOnChange.mock.calls.at(-1)).toEqual([0.4, 0.6]);
     });
   });
 
@@ -248,6 +408,7 @@ describe('XYPad Component', () => {
       );
       const slider = screen.getByRole('slider');
       expect(slider.getAttribute('aria-valuetext')).toBe('Decay: 30%, Wet: 70%');
+      expect(slider.getAttribute('aria-roledescription')).toBe('two-dimensional slider');
     });
 
     it('is focusable when not disabled', () => {
