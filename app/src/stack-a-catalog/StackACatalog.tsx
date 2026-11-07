@@ -6,8 +6,11 @@ import { StepCountDropdown } from '../components/StepCountDropdown';
 import { TransposeDropdown } from '../components/TransposeDropdown';
 import { EffectsPanel } from '../components/EffectsPanel';
 import { TrackDrawer } from '../components/TrackDrawer';
-import { Transport } from '../components/Transport';
+// Production loads TrackRow.css before Transport.css. Loaded after it, a
+// generic TrackRow selector such as .swing-value would restyle the transport
+// in the catalogue but never in the product.
 import '../components/TrackRow.css';
+import { Transport } from '../components/Transport';
 import { DEFAULT_EFFECTS_STATE } from '../shared/effects-defaults';
 import type { EffectsState } from '../shared/sync-types';
 import './catalog.css';

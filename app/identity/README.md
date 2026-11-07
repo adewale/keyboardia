@@ -60,7 +60,22 @@ Once the harness exists in the merge base, the server uses that base-owned
 catalogue and refuses simultaneous edits to protected identity files. Harness
 updates therefore land as explicit prerequisite PRs by setting
 `STACK_A_ALLOW_HARNESS_CHANGES=1`; ordinary product refactors cannot weaken
-their own evidence.
+their own evidence. While a harness change is authorised, both revisions are
+rendered with the catalogue under review, so a catalogue edit is not reported
+as a product change.
+
+## Retired: whole-product states
+
+The Stack B pilot also compared eight states of the production build, base
+against head, across the whole page. They were evidence for that one-time
+migration, and their receipts stay bound in
+`audit/css-consistency/stack-b-evidence`. As a per-PR gate they could not
+survive any intended layout change, and they found the step-count dropdown
+through the old track row's DOM. They were retired ahead of the piano roll
+dock. Component identity stays here. Full-page coverage stays with
+`e2e/visual.spec.ts`, whose baselines are regenerated on the CI image and
+reviewed. The catalogue imports its stylesheets in production's bundle order,
+so the cascade it tests is the product's.
 
 Portrait and landscape entries exercise responsive CSS in canonical Chromium.
 A separate mobile-WebKit project uses emulated touch (`hasTouch`); neither lane

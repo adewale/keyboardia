@@ -872,3 +872,9 @@ The `unit` Vitest lane runs under a 15-second global timeout (`app/vitest.config
 ### E2E Testing
 - [Playwright Documentation](https://playwright.dev/)
 - [Testing Library](https://testing-library.com/)
+
+Stack B evidence is a historical packet for its recorded base/candidate pair.
+Verification retains every artifact hash and receipt identity and requires the
+recorded candidate to remain in history. It does not approve later HEADs; current
+visual, accessibility and interaction gates own those. Later source edits do not
+require rewriting historical approval metadata.
