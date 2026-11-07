@@ -123,11 +123,13 @@ async function settle(page: Page) {
     await new Promise<void>((resolve) => {
       requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
     });
-    // A menu animates open. Hovering an option mid-animation let the locator's
-    // scroll land on a moving target, leaving the list at 0px or 32px.
-    for (const animation of document.getAnimations()) {
-      if (Number.isFinite(animation.effect?.getTiming().iterations)) animation.finish();
-    }
+    // A menu or panel animates open. Wait for the opening to end on its own:
+    // hovering mid-animation lets the locator's scroll land on a moving
+    // target, and ending it early with finish() leaves text on a half-pixel
+    // menu snapped either way, depending on when its layer goes.
+    await Promise.all(document.getAnimations()
+      .filter((animation) => Number.isFinite(animation.effect?.getTiming().iterations))
+      .map((animation) => animation.finished.catch(() => undefined)));
   });
 }
 

@@ -89,7 +89,7 @@ function harnessExistsAtBase(baseSha) {
 // dock, for retiring the full-app states and loading TrackRow.css before
 // Transport.css in the catalogue. Like the two below, it expires when main
 // moves.
-const catalogueReviewBaseSha = '869d3f5095084003e1251aa3ebf2eab8f65f62fe';
+const catalogueReviewBaseSha = '90ecc152330cabc33060788f14c67795307d4bba';
 
 function harnessChangeAuthorised(baseSha) {
   return process.env.STACK_A_ALLOW_HARNESS_CHANGES === '1' || baseSha === catalogueReviewBaseSha;
