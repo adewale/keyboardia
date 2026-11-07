@@ -872,3 +872,11 @@ The `unit` Vitest lane runs under a 15-second global timeout (`app/vitest.config
 ### E2E Testing
 - [Playwright Documentation](https://playwright.dev/)
 - [Testing Library](https://testing-library.com/)
+
+`validate:sync` executes existing client/action/hook keepers and the real Worker
+collaboration suite. A typed payload matrix exercises every classified mutation
+on collaborator sockets; source strings and private handler names are not a proof.
+Sample-quality evaluator hashes remain capture provenance. Fresh decoded issues
+must still match the approved file bytes, complete manifest, issue identity,
+measurement tolerance and exact threshold; new, changed or disappeared issues fail.
+Historical reports still require their own evaluator/report integrity checks.
