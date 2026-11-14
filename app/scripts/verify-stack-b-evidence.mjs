@@ -32,10 +32,6 @@ function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
-const stackBManifest = readFileSync(resolve(appRoot, 'identity/stack-b-manifest.ts'), 'utf8');
-const migrationBase = stackBManifest.match(/STACK_B_MIGRATION_BASE_SHA = '([\da-f]{40})'/)?.[1];
-assert(migrationBase, 'Unable to read the Stack B migration base');
-
 const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
 assert(manifest.schemaVersion === 1, 'Unsupported Stack B approval manifest schema');
 assert(manifest.generator?.name === 'app/scripts/finalize-stack-b-evidence.mjs', 'Unexpected evidence finalizer');
@@ -57,12 +53,15 @@ for (const entry of manifest.files) {
 }
 assert(manifest.checks.boundFileCount === actualFiles.length, 'Bound evidence file count is stale');
 
-const expectedReceipts = readFileSync(resolve(appRoot, 'identity/test-title-inventory.txt'), 'utf8')
+// These receipts describe the frozen pilot, including its retired full-app
+// states. Derive their inventory from the revision that produced them; edits
+// to today's test catalogue must not require regenerating historical evidence.
+const expectedReceipts = git(['show', `${manifest.headRevision}:app/identity/test-title-inventory.txt`])
   .split(/\r?\n/)
   .flatMap((line) => {
     const match = line.match(/stack-b-visual\.spec\.ts .* › ([^ ]+) @stack-b-(visual|full-app)$/);
     if (!match) return [];
-    return [`${match[2] === 'visual' ? 'catalogue' : 'full-app'}--${match[1]}.json`];
+    return [`${match[2] === 'full-app' ? 'full-app' : 'catalogue'}--${match[1]}.json`];
   })
   .sort();
 const actualReceipts = readdirSync(receiptsRoot).filter((name) => name.endsWith('.json')).sort();
@@ -91,30 +90,18 @@ const readme = readFileSync(resolve(evidenceRoot, 'README.md'), 'utf8');
 assert(readme.includes(manifest.baseRevision), 'Evidence README omits the approved base revision');
 assert(readme.includes(manifest.headRevision), 'Evidence README omits the candidate source revision');
 
-const requestedBase = process.env.STACK_A_BASE_REF
-  || (process.env.GITHUB_BASE_REF ? `origin/${process.env.GITHUB_BASE_REF}` : 'origin/main');
-const currentBase = git(['merge-base', 'HEAD', requestedBase]);
-if (currentBase === migrationBase) {
-  assert(manifest.baseRevision === currentBase, 'The merge base moved; regenerate Stack B evidence');
-  const candidateExists = spawnSync(
-    'git',
-    ['cat-file', '-e', `${manifest.headRevision}^{commit}`],
-    { cwd: repoRoot, stdio: 'ignore' },
-  );
-  assert(candidateExists.status === 0, 'The candidate source revision is unavailable');
-  const isAncestor = spawnSync(
-    'git',
-    ['merge-base', '--is-ancestor', manifest.headRevision, 'HEAD'],
-    { cwd: repoRoot, stdio: 'ignore' },
-  );
-  assert(isAncestor.status === 0, 'The candidate source revision is not an ancestor of HEAD');
-  const drift = git(['diff', '--name-only', manifest.headRevision, 'HEAD', '--'])
-    .split(/\r?\n/)
-    .filter(Boolean)
-    .filter((path) => !path.startsWith('audit/css-consistency/stack-b-evidence/'));
-  assert(drift.length === 0, `Source changed after evidence generation:\n${drift.join('\n')}`);
-}
+// This immutable packet attests to its recorded migration revisions. Current browser
+// and accessibility gates own today's behavior; unrelated commits do not invalidate history.
+const candidateExists = spawnSync('git', ['cat-file', '-e', `${manifest.headRevision}^{commit}`],
+  {cwd: repoRoot, stdio: 'ignore'});
+assert(candidateExists.status === 0, 'The recorded candidate source revision is unavailable');
+const recordedBase = spawnSync('git', ['merge-base', '--is-ancestor', manifest.baseRevision, manifest.headRevision],
+  {cwd: repoRoot, stdio: 'ignore'});
+assert(recordedBase.status === 0, 'The recorded base is unavailable or not an ancestor of the captured candidate');
+const isAncestor = spawnSync('git', ['merge-base', '--is-ancestor', manifest.headRevision, 'HEAD'],
+  {cwd: repoRoot, stdio: 'ignore'});
+assert(isAncestor.status === 0, 'The recorded candidate source revision is not an ancestor of HEAD');
 
 console.log(
-  `Stack B evidence verified: ${actualReceipts.length} receipts and ${actualFiles.length} bound files for ${manifest.headRevision}.`,
+  `Historical Stack B evidence verified (not an approval of current HEAD): ${actualReceipts.length} receipts and ${actualFiles.length} bound files for ${manifest.headRevision}.`,
 );
