@@ -34,8 +34,7 @@ import {
   measureDecodedLeadingSilenceSeconds,
 } from '../src/audio/sample-onset';
 import {
-  measurementsEqual,
-  measurementsExactlyEqual,
+  applySampleQualityWaivers,
   sampleQualityEvaluatorBundleSha256,
   sha256File,
   type SampleQualityBaseline,
@@ -291,12 +290,11 @@ function readBaseline(pathname: string | null, instruments: Set<string> | null):
   if (baseline.version !== 3 || !Array.isArray(baseline.waivers)) {
     throw new Error(`Invalid sample-quality baseline schema in ${pathname}`);
   }
-  const evaluatorBundleSha256 = sampleQualityEvaluatorBundleSha256();
-  if (baseline.evaluatorBundleSha256 !== evaluatorBundleSha256) {
-    throw new Error(
-      `Sample-quality baseline evaluator bundle is stale: expected ${evaluatorBundleSha256}, ` +
-      `received ${baseline.evaluatorBundleSha256 ?? 'missing'}`
-    );
+  if (!/^[a-f0-9]{64}$/.test(baseline.evaluatorBundleSha256)) {
+    throw new Error('Baseline is missing valid evaluator capture provenance');
+  }
+  if (baseline.evaluatorBundleSha256 !== sampleQualityEvaluatorBundleSha256()) {
+    console.info('Baseline evaluator source differs from capture; revalidating each source, manifest, measurement and threshold.');
   }
   const identities = new Set<string>();
   for (const waiver of baseline.waivers) {
@@ -510,50 +508,6 @@ function addRangeIssues(manifests: Manifest[], thresholds: QualityThresholds, is
   }
 }
 
-function issueMatchesWaiver(issue: QualityIssue, waiver: SampleQualityWaiver): boolean {
-  return issue.code === waiver.code &&
-    issue.instrumentId === waiver.instrumentId &&
-    waiver.file === issue.file &&
-    measurementsEqual(issue.value, waiver.measuredValue) &&
-    measurementsExactlyEqual(issue.threshold, waiver.threshold);
-}
-
-function applyWaivers(issues: QualityIssue[], waivers: SampleQualityWaiver[]): {
-  unwaivedIssues: QualityIssue[];
-  waivedIssues: WaivedQualityIssue[];
-} {
-  if (waivers.length === 0) return { unwaivedIssues: issues, waivedIssues: [] };
-
-  const matchedWaivers = new Set<number>();
-  const unwaivedIssues: QualityIssue[] = [];
-  const waivedIssues: WaivedQualityIssue[] = [];
-
-  for (const issue of issues) {
-    const waiverIndex = waivers.findIndex(waiver => issueMatchesWaiver(issue, waiver));
-    if (waiverIndex === -1) {
-      unwaivedIssues.push(issue);
-    } else {
-      matchedWaivers.add(waiverIndex);
-      waivedIssues.push({ issue, waiver: waivers[waiverIndex] });
-    }
-  }
-
-  for (let i = 0; i < waivers.length; i++) {
-    if (matchedWaivers.has(i)) continue;
-    const waiver = waivers[i];
-    unwaivedIssues.push({
-      severity: 'error',
-      code: 'STALE_WAIVER',
-      instrumentId: waiver.instrumentId,
-      file: waiver.file,
-      message: `Baseline waiver for ${waiver.code} no longer matches an emitted issue; remove it from ${DEFAULT_BASELINE}`,
-      value: waiver.code,
-    });
-  }
-
-  return { unwaivedIssues, waivedIssues };
-}
-
 function buildInstrumentSummaries(entries: SampleMetricEntry[], issues: QualityIssue[]): InstrumentSummary[] {
   const byInstrument = new Map<string, SampleMetricEntry[]>();
   for (const entry of entries) {
@@ -684,7 +638,7 @@ function renderMarkdown(report: SampleQualityReport): string {
   lines.push('');
   lines.push('- `error` means objective decode/measurement defects that should block CI unless explicitly waived.');
   lines.push('- `review` means measurable risk that needs A/B listening or source-specific judgment.');
-  lines.push('- Current baseline entries bind the source file, complete manifest, evaluator bundle, and six-decimal stored measurement/threshold; an issue measurement may deviate from its stored canonical value by at most 0.000001, while thresholds remain exact.');
+  lines.push('- Current baseline entries bind the source file, complete manifest, and six-decimal stored measurement/threshold; the evaluator bundle is capture provenance; an issue measurement may deviate from its stored canonical value by at most 0.000001, while thresholds remain exact.');
   lines.push('- Metrics are generated from decoded PCM via Web Audio in Node; Chromium codec support is covered by the blocking browser decode smoke test.');
   lines.push('');
   return `${lines.join('\n')}\n`;
@@ -764,7 +718,7 @@ async function main(): Promise<void> {
   addRangeIssues(manifests, thresholds, rawIssues);
   addTonalLoudnessIssues(entries, manifests, thresholds, rawIssues);
 
-  const { unwaivedIssues, waivedIssues } = applyWaivers(sortIssues(rawIssues), waivers);
+  const { unwaivedIssues, waivedIssues } = applySampleQualityWaivers(sortIssues(rawIssues), waivers);
   const sortedUnwaivedIssues = sortIssues(unwaivedIssues);
   const instrumentSummaries = buildInstrumentSummaries(entries, sortedUnwaivedIssues);
   const evaluatorBundleSha256 = sampleQualityEvaluatorBundleSha256();

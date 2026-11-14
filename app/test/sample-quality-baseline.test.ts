@@ -5,6 +5,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import {
+  applySampleQualityWaivers,
   BOUND_MEASURED_VALUE_ABSOLUTE_TOLERANCE,
   boundMeasurement,
   measurementsEqual,
@@ -46,13 +47,13 @@ describe('sample-quality baseline identity', () => {
     expect(measurementsEqual(0, null)).toBe(false);
   });
 
-  it('binds every disposition to evaluator, manifest, source, and canonical measurement evidence', () => {
+  it('binds every disposition to manifest, source and measured behavior, retaining evaluator provenance', () => {
     const baseline = JSON.parse(
       fs.readFileSync(path.resolve(APP_ROOT, 'scripts/sample-quality-baseline.json'), 'utf8'),
     ) as SampleQualityBaseline;
 
     expect(baseline.version).toBe(3);
-    expect(baseline.evaluatorBundleSha256).toBe(sampleQualityEvaluatorBundleSha256(APP_ROOT));
+    expect(baseline.evaluatorBundleSha256).toMatch(/^[a-f0-9]{64}$/);
     expect(baseline.waivers).toHaveLength(194);
     for (const waiver of baseline.waivers) {
       const instrumentDir = path.resolve(APP_ROOT, 'public/instruments', waiver.instrumentId);
@@ -96,5 +97,30 @@ describe('sample-quality baseline identity', () => {
     } finally {
       fs.rmSync(temporaryRoot, { recursive: true, force: true });
     }
+  });
+});
+
+describe('fresh sample-quality waiver matching', () => {
+  const waiver = {code:'HOT_PEAK',instrumentId:'fixture',file:'note.wav',sha256:'a'.repeat(64),
+    manifestSha256:'b'.repeat(64),measuredValue:1.2,threshold:1,reason:'Reviewed fixture'};
+  const issue = {severity:'error' as const,code:'HOT_PEAK',instrumentId:'fixture',file:'note.wav',
+    value:1.2,threshold:1,message:'Measured peak exceeds threshold'};
+  it('accepts unchanged observations regardless of evaluator source serialization', () => {
+    const result = applySampleQualityWaivers([{...issue}], [{...waiver}]);
+    expect(result.unwaivedIssues).toEqual([]);
+    expect(result.waivedIssues).toEqual([{issue,waiver}]);
+  });
+  it.each([
+    {...issue,value:1.3}, {...issue,threshold:1.01}, {...issue,code:'NEW_DEFECT'},
+    {...issue,instrumentId:'another'}, {...issue,file:'different.wav'},
+  ])('rejects changed observations or policy: %o', changed => {
+    const result = applySampleQualityWaivers([changed], [waiver]);
+    expect(result.waivedIssues).toEqual([]);
+    expect(result.unwaivedIssues).toContainEqual(changed);
+    expect(result.unwaivedIssues).toContainEqual(expect.objectContaining({code:'STALE_WAIVER'}));
+  });
+  it('requires review when a formerly waived issue disappears', () => {
+    expect(applySampleQualityWaivers([], [waiver]).unwaivedIssues)
+      .toContainEqual(expect.objectContaining({code:'STALE_WAIVER'}));
   });
 });

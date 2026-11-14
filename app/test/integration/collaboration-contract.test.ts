@@ -8,6 +8,8 @@
  */
 import { afterEach, expect, it } from 'vitest';
 import { env, evictDurableObject, SELF } from 'cloudflare:test';
+import {MESSAGE_TO_STATE_BROADCAST, type MutatingMessageType} from '../../src/shared/messages';
+import {SYNC_CAPABILITIES, TRACK_ENVELOPE_CAPABILITY, type ClientMessageBase} from '../../src/shared/message-types';
 import { setTrackInstrument } from '../../src/shared/track-instrument';
 
 interface Env {
@@ -93,11 +95,11 @@ function initialState() {
   };
 }
 
-async function createSession(): Promise<string> {
+async function createSession(state = initialState()): Promise<string> {
   const response = await SELF.fetch('http://localhost/api/sessions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ state: initialState() }),
+    body: JSON.stringify({ state }),
   });
   expect(response.status).toBe(201);
   return ((await response.json()) as { id: string }).id;
@@ -150,9 +152,9 @@ function listen(socket: WebSocket) {
   };
 }
 
-async function connect(sessionId: string, playerId: string) {
+async function connect(sessionId: string, playerId: string, capabilities: readonly string[] = []) {
   const response = await SELF.fetch(
-    `http://localhost/api/sessions/${sessionId}/ws?playerId=${playerId}`,
+    `http://localhost/api/sessions/${sessionId}/ws?playerId=${playerId}&capabilities=${capabilities.join(',')}`,
     { headers: { Upgrade: 'websocket' } },
   );
   expect(response.status).toBe(101);
@@ -855,3 +857,62 @@ it('applies the same result through the Durable Object as the shared operation',
   const [fromServer] = await readTracks(sessionId);
   expect(fromServer).toEqual(pure.state.tracks[0]);
 });
+
+// Payload fixtures, not a parallel dispatch implementation. The mapped type forces
+// additions to the production mutation inventory to supply an executable example.
+const mutationExamples = {
+  toggle_step: {type:'toggle_step',...{trackId:'shared-track',step:0}},
+  set_tempo: {type:'set_tempo',...{tempo:132}},
+  set_swing: {type:'set_swing',...{swing:20}},
+  set_parameter_lock: {type:'set_parameter_lock',...{trackId:'shared-track',step:0,lock:{volume:.5}}},
+  add_track: {type:'add_track',...{track:track('new-track')}},
+  delete_track: {type:'delete_track',...{trackId:'shared-track'}},
+  clear_track: {type:'clear_track',...{trackId:'shared-track'}},
+  set_track_instrument: {type:'set_track_instrument',...{trackId:'shared-track',sampleId:'sampled:808-kick'}},
+  set_track_sample: {type:'set_track_sample',...{trackId:'shared-track',sampleId:'sampled:808-kick',name:'Shared Track'}},
+  set_track_volume: {type:'set_track_volume',...{trackId:'shared-track',volume:.4}},
+  set_track_pan: {type:'set_track_pan',...{trackId:'shared-track',pan:.2}},
+  set_track_transpose: {type:'set_track_transpose',...{trackId:'shared-track',transpose:2}},
+  set_track_step_count: {type:'set_track_step_count',...{trackId:'shared-track',stepCount:8}},
+  set_track_swing: {type:'set_track_swing',...{trackId:'shared-track',swing:10}},
+  set_effects: {type:'set_effects',...{effects:{bypass:false,reverb:{decay:1,wet:.1},delay:{time:'8n',feedback:.2,wet:.1},chorus:{frequency:1,depth:.2,wet:.1},distortion:{amount:.1,wet:.1}}}},
+  set_scale: {type:'set_scale',...{scale:{root:'C',scaleId:'minor',locked:true}}},
+  set_fm_params: {type:'set_fm_params',...{trackId:'shared-track',fmParams:{harmonicity:2,modulationIndex:3}}},
+  set_track_envelope: {type:'set_track_envelope',...{trackId:'shared-track',envelope:null}},
+  set_track_envelope_time_unit: {type:'set_track_envelope_time_unit',...{trackId:'shared-track',unit:'steps'}},
+  set_track_gate: {type:'set_track_gate',...{trackId:'shared-track',gate:.5}},
+  set_track_envelope_v2: {type:'set_track_envelope_v2',...{trackId:'shared-track',envelope:null,operationId:'matrix-op'}},
+  convert_track_envelope_units_v2: {type:'convert_track_envelope_units_v2',...{trackId:'shared-track',targetUnit:'steps',operationId:'matrix-op'}},
+  set_track_sample_playback_mode_v2: {type:'set_track_sample_playback_mode_v2',...{trackId:'shared-track',mode:null,operationId:'matrix-op'}},
+  set_track_gate_v2: {type:'set_track_gate_v2',...{trackId:'shared-track',gate:.4,operationId:'matrix-op'}},
+  set_envelope_lock_v2: {type:'set_envelope_lock_v2',...{trackId:'shared-track',step:0,stage:'attack',duration:null,operationId:'matrix-op'}},
+  copy_sequence: {type:'copy_sequence',...{fromTrackId:'shared-track',toTrackId:'destination'}},
+  move_sequence: {type:'move_sequence',...{fromTrackId:'shared-track',toTrackId:'destination'}},
+  set_session_name: {type:'set_session_name',...{name:'Matrix session'}},
+  batch_clear_steps: {type:'batch_clear_steps',...{trackId:'shared-track',steps:[0,1]}},
+  batch_set_parameter_locks: {type:'batch_set_parameter_locks',...{trackId:'shared-track',locks:[{step:0,lock:{volume:.5}}]}},
+  set_loop_region: {type:'set_loop_region',...{region:{start:0,end:8}}},
+  reorder_tracks: {type:'reorder_tracks',...{trackId:'shared-track',toIndex:1}},
+  rotate_pattern: {type:'rotate_pattern',...{trackId:'shared-track',direction:'right'}},
+  invert_pattern: {type:'invert_pattern',...{trackId:'shared-track'}},
+  reverse_pattern: {type:'reverse_pattern',...{trackId:'shared-track'}},
+  mirror_pattern: {type:'mirror_pattern',...{trackId:'shared-track',direction:'left-to-right'}},
+  euclidean_fill: {type:'euclidean_fill',...{trackId:'shared-track',hits:4}},
+  set_track_name: {type:'set_track_name',...{trackId:'shared-track',name:'Renamed'}},
+} satisfies {[K in MutatingMessageType]: Extract<ClientMessageBase, {type: K}>};
+for (const type of Object.keys(MESSAGE_TO_STATE_BROADCAST) as MutatingMessageType[]) {
+  it(`executes ${type} through the real Worker and collaborator socket`, async () => {
+    const state = initialState();
+    Object.assign(state.tracks[0], {envelope:{attack:.01,decay:.1,sustain:.5,release:.1}});
+    state.tracks[0].steps[0] = true;
+    state.tracks.push(track('destination'));
+    const capabilities = [...SYNC_CAPABILITIES, TRACK_ENVELOPE_CAPABILITY];
+    const sessionId = await createSession(state);
+    const sender = await connect(sessionId, 'matrix-sender', capabilities);
+    const receiver = await connect(sessionId, 'matrix-receiver', capabilities);
+    sender.socket.send(JSON.stringify({...mutationExamples[type],seq:991}));
+    const broadcast = await receiver.inbox.waitFor(
+      message => message.type === MESSAGE_TO_STATE_BROADCAST[type], `${type} state broadcast`);
+    expect(broadcast).toMatchObject({type:MESSAGE_TO_STATE_BROADCAST[type],playerId:'matrix-sender'});
+  });
+}

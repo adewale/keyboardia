@@ -242,7 +242,7 @@ describe('Sync Layer Coverage', () => {
     for (const actionType of SYNCED_ACTIONS) {
       if (NON_STANDARD_SYNC_ACTIONS.has(actionType)) {
         // dedicated-sync-senders.test.ts owns their payload behavior, while
-        // validate-sync-checklist verifies each sender remains wired to its hook.
+        // Dedicated sender and hook keepers execute those paths in validate:sync.
         continue;
       }
 

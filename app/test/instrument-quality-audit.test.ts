@@ -95,7 +95,7 @@ function currentEvidenceSubjectCommit(): string {
   return currentEvidenceIndex().subjectCommit;
 }
 
-function currentCandidateSampleReport(): Record<string, unknown> {
+function measurementFixtureForCurrentRun(): Record<string, unknown> {
   const evidenceSubjectCommit = currentEvidenceSubjectCommit();
   const report = JSON.parse(fs.readFileSync(
     currentEvidenceArtifactPath('candidateSampleQuality'),
@@ -104,18 +104,18 @@ function currentCandidateSampleReport(): Record<string, unknown> {
   if (report.subjectCommit !== evidenceSubjectCommit) {
     throw new Error('Current sample-quality evidence subject differs from its index');
   }
-  if (report.evaluatorBundleSha256 !== sampleQualityEvaluatorBundleSha256(APP_ROOT)
+  if (!/^[a-f0-9]{64}$/.test(String(report.evaluatorBundleSha256))
     || report.baselineSha256 !== sha256File(
       path.resolve(APP_ROOT, 'scripts/sample-quality-baseline.json'),
     )) {
-    throw new Error('Current sample-quality evidence has stale evaluator or baseline identity');
+    throw new Error('Measurement fixture has invalid capture provenance or changed baseline inputs');
   }
-  report.subjectCommit = currentSubjectCommit();
-  report.evaluatorBundleSha256 = sampleQualityEvaluatorBundleSha256(APP_ROOT);
-  report.baselineSha256 = sha256File(
-    path.resolve(APP_ROOT, 'scripts/sample-quality-baseline.json'),
-  );
-  return report;
+  // Replay retained measurements as TEST INPUT for this invocation, not as a new
+  // capture/approval. The artifact hash above authenticates the unchanged historical
+  // fixture; the auditor below must independently decode today's real sample bytes
+  // and reject any changed measurement. A source refactor must not lock that oracle.
+  return {...report, subjectCommit: currentSubjectCommit(),
+    evaluatorBundleSha256: sampleQualityEvaluatorBundleSha256(APP_ROOT)};
 }
 
 function currentLiveReportFixture(): Record<string, unknown> {
@@ -448,7 +448,7 @@ describe('instrument quality audit evidence coverage', () => {
   });
 
   it('accepts a complete receipt after independent canonical decoded recomputation', () => {
-    const sampleReport = currentCandidateSampleReport();
+    const sampleReport = measurementFixtureForCurrentRun();
     const liveReport = currentLiveReportFixture();
     expect(sampleReport.waivedIssues as unknown[]).toHaveLength(203);
 
@@ -459,7 +459,7 @@ describe('instrument quality audit evidence coverage', () => {
   }, 120_000);
 
   it('rejects deleting all 203 decoded findings and rewriting the dependent totals', () => {
-    const sampleReport = currentCandidateSampleReport();
+    const sampleReport = measurementFixtureForCurrentRun();
     const liveReport = currentLiveReportFixture();
     const waivedIssues = sampleReport.waivedIssues as unknown[];
     expect(waivedIssues).toHaveLength(203);

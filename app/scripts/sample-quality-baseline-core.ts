@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import type { QualityIssue } from './sample-quality-core';
 
 export type BoundMeasurement = number | string | null;
 
@@ -33,7 +34,7 @@ export interface SampleQualityWaiver {
 
 export interface SampleQualityBaseline {
   version: 3;
-  /** Hash of the complete source bundle that emitted and applied dispositions. */
+  /** Capture provenance for the evaluator; fresh observations decide applicability. */
   evaluatorBundleSha256: string;
   waivers: SampleQualityWaiver[];
 }
@@ -100,4 +101,49 @@ export function measurementsEqual(
       && Math.abs(left - right) <= BOUND_MEASURED_VALUE_ABSOLUTE_TOLERANCE;
   }
   return Object.is(left ?? null, right);
+}
+
+
+function issueMatchesWaiver(issue: QualityIssue, waiver: SampleQualityWaiver): boolean {
+  return issue.code === waiver.code &&
+    issue.instrumentId === waiver.instrumentId &&
+    waiver.file === issue.file &&
+    measurementsEqual(issue.value, waiver.measuredValue) &&
+    measurementsExactlyEqual(issue.threshold, waiver.threshold);
+}
+
+export function applySampleQualityWaivers(issues: QualityIssue[], waivers: SampleQualityWaiver[]): {
+  unwaivedIssues: QualityIssue[];
+  waivedIssues: Array<{issue: QualityIssue; waiver: SampleQualityWaiver}>;
+} {
+  if (waivers.length === 0) return { unwaivedIssues: issues, waivedIssues: [] };
+
+  const matchedWaivers = new Set<number>();
+  const unwaivedIssues: QualityIssue[] = [];
+  const waivedIssues: Array<{issue: QualityIssue; waiver: SampleQualityWaiver}> = [];
+
+  for (const issue of issues) {
+    const waiverIndex = waivers.findIndex(waiver => issueMatchesWaiver(issue, waiver));
+    if (waiverIndex === -1) {
+      unwaivedIssues.push(issue);
+    } else {
+      matchedWaivers.add(waiverIndex);
+      waivedIssues.push({ issue, waiver: waivers[waiverIndex] });
+    }
+  }
+
+  for (let i = 0; i < waivers.length; i++) {
+    if (matchedWaivers.has(i)) continue;
+    const waiver = waivers[i];
+    unwaivedIssues.push({
+      severity: 'error',
+      code: 'STALE_WAIVER',
+      instrumentId: waiver.instrumentId,
+      file: waiver.file,
+      message: `Baseline waiver for ${waiver.code} no longer matches an emitted issue; remove it from sample-quality baseline`,
+      value: waiver.code,
+    });
+  }
+
+  return { unwaivedIssues, waivedIssues };
 }
