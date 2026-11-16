@@ -27,13 +27,11 @@
   animation: kb-panel-in var(--motion-panel-duration) var(--motion-ease-out);
 }
 
-.action-btn.paste,
-.drawer-action-btn-compact.primary,
-.drawer-action-btn.primary {
+.dock-tool-button.paste,
+.drawer-action-btn-compact.primary {
   animation: kb-paste-in var(--motion-fast-duration) var(--motion-ease-out);
 }
 
-.action-btn,
 .control-group-btn,
 .session-btn,
 .play-button,
@@ -50,7 +48,6 @@
 }
 
 .step-cell:active,
-.action-btn:active:not(:disabled),
 .control-group-btn:active:not(:disabled),
 .session-btn:active:not(:disabled),
 .play-button:active,
@@ -62,14 +59,12 @@
 
 @media (prefers-reduced-motion: reduce) {
   .plock-inline,
-  .action-btn.paste,
-  .drawer-action-btn-compact.primary,
-  .drawer-action-btn.primary {
+  .dock-tool-button.paste,
+  .drawer-action-btn-compact.primary {
     animation: none;
   }
 
   .step-cell,
-  .action-btn,
   .control-group-btn,
   .session-btn,
   .play-button,
@@ -80,7 +75,6 @@
   }
 
   .step-cell:active,
-  .action-btn:active:not(:disabled),
   .control-group-btn:active:not(:disabled),
   .session-btn:active:not(:disabled),
   .play-button:active,

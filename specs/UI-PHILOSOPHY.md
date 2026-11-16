@@ -1,5 +1,7 @@
 # Keyboardia UI Philosophy
 
+> **Planned amendment:** See the [dock-specific proposal below](#proposed-dock-amendment-one-display-mode-decision). Existing core principles, current-app examples and quality standards remain unchanged.
+
 Inspired by the Teenage Engineering OP-Z and lessons learned during implementation.
 
 ---
@@ -159,3 +161,19 @@ For any new feature, ask:
 5. Can I discover it by experimenting?
 
 If the answer to #3 is "yes" or #4/#5 is "no", reconsider the design.
+
+---
+
+## Proposed Dock Amendment: One Display-Mode Decision
+
+**Planned editor-placement exception (October 2026):** [PIANO-ROLL-DOCK.md](./PIANO-ROLL-DOCK.md) proposes an exception to inline editor placement: cell lanes remain inline, while editors use a desktop dock or expanded landscape sheet within the sequencer. The general principles and existing examples above remain unchanged; this amendment does not declare the proposal shipped or relax quality requirements.
+
+Controls still belong to their targets: Copy/Paste, Clear and Delete remain on each row, with visible source/destination state and protected final-step access. Dock relocation must earn its proximity trade-off through persistent track/step context, immediate feedback, unchanged returning row scroll and focus restoration. All-track access, read-only enforcement, lock-preserving toggles, explicit erasure, keyboard/touch alternatives and contrast remain acceptance requirements.
+
+For this proposed dock only, Step and Notes-toolbar loop alternatives are32px desktop/44px mobile; loop native Start/End inputs and Clear remain in Notes, not Track details. The landscape status16 strip supplies bar.beat labels without body-height cost, plus cursor-updated title and hidden live context. Blue focus/selection and yellow solo are dock-specific planned state tokens, not a rewrite of the app-wide colour language. Informative muted controls/key labels retain contrast; range/scale decoration does not disable audition.
+
+This section applies to the proposed [piano-roll dock](./PIANO-ROLL-DOCK.md), not to the shipped Keyboardia examples or core principles above. Keep the target-local row actions, visible modes, immediate feedback and existing accessibility and contrast standards when relocating editors.
+
+One JavaScript decision controls the dock's layout and interaction state: desktop if `width >= 768 && height >= 500`; otherwise landscape if `height < 500 || width > height`; otherwise portrait. CSS reads the root `data-display-mode` from that decision; separate orientation or height queries must not disagree with focus, inert state or editor lifecycle. A 390×499 short portrait viewport and a 700×600 viewport use the landscape editor; 1024×500 uses the desktop dock. The portrait listening-preview conjunction remains unchanged.
+
+Reuse the verified app orientation-mode decision, including its768px desktop boundary, without changing app code or redefining tablet behavior. Acceptance covers767px portrait,768/769px desktop at height≥500 and768×499 landscape.

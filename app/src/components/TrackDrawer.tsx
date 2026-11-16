@@ -1,6 +1,13 @@
 /**
  * TrackDrawer Component
  *
+ * No longer rendered by the app: since the landscape editor dock
+ * (specs/PIANO-ROLL-DOCK.md, phase 8), a landscape track name opens the dock's
+ * Track pane instead. The component stays only because the Stack A identity
+ * catalogue (src/stack-a-catalog, a protected harness that changes in its own
+ * prerequisite PR; see identity/README.md) still renders it; delete it with
+ * that catalogue story.
+ *
  * Compact inline drawer for landscape mobile mode.
  * Shows track controls in a horizontal layout:
  * - Drag handle (⠿) - for reordering

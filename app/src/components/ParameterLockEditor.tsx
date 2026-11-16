@@ -1,21 +1,24 @@
 /**
- * ParameterLockEditor - Inline editor for step parameter locks
+ * ParameterLockEditor - the controls for one step's parameter lock
  *
- * Extracted from TrackRow.tsx to reduce component complexity (NEW-002a).
- * Provides controls for per-step pitch, volume, and tie settings.
+ * Extracted from TrackRow.tsx to reduce component complexity (NEW-002a). It
+ * renders in the editor dock's Step pane (specs/PIANO-ROLL-DOCK.md, phase 6),
+ * which decides when it shows and how it is dismissed (Escape, the Notes
+ * chip, or selecting another step), so it no longer listens for clicks
+ * outside itself.
  *
  * Features:
  * - Pitch adjustment (-24 to +24 semitones)
  * - Volume adjustment (0-100%)
  * - Tie toggle (continue note from previous step)
- * - Auto-dismiss when clicking outside
  * - Range validation with visual feedback for out-of-range pitches
  */
 
-import React, { useRef, useEffect, useCallback, useId, useMemo } from 'react';
+import React, { useCallback, useId, useMemo } from 'react';
 import type { ParameterLock } from '../types';
 import { isInRange, getInstrumentRange } from '../audio/instrument-ranges';
 import { Warning } from '../icons';
+import './ParameterLockEditor.css';
 
 export interface ParameterLockEditorProps {
   /** The step index being edited (1-based display, 0-based internally) */
@@ -30,8 +33,8 @@ export interface ParameterLockEditorProps {
   onTieToggle: () => void;
   /** Callback to clear all locks on this step */
   onClearLock: () => void;
-  /** Callback when editor should be dismissed */
-  onDismiss: () => void;
+  /** Published session: show the lock, accept no edits */
+  disabled?: boolean;
   /** Sample ID for range validation (e.g., 'sampled:piano') */
   sampleId?: string;
   /** Track transpose value */
@@ -39,21 +42,18 @@ export interface ParameterLockEditorProps {
 }
 
 /**
- * Inline parameter lock editor for a single step.
+ * Parameter lock controls for a single step.
  *
  * @example
  * ```tsx
- * {selectedStep !== null && (
- *   <ParameterLockEditor
- *     step={selectedStep}
- *     lock={track.parameterLocks[selectedStep]}
- *     onPitchChange={handlePitchChange}
- *     onVolumeChange={handleVolumeChange}
- *     onTieToggle={handleTieToggle}
- *     onClearLock={handleClearLock}
- *     onDismiss={() => setSelectedStep(null)}
- *   />
- * )}
+ * <ParameterLockEditor
+ *   step={selectedStep}
+ *   lock={track.parameterLocks[selectedStep]}
+ *   onPitchChange={handlePitchChange}
+ *   onVolumeChange={handleVolumeChange}
+ *   onTieToggle={handleTieToggle}
+ *   onClearLock={handleClearLock}
+ * />
  * ```
  */
 export function ParameterLockEditor({
@@ -63,33 +63,13 @@ export function ParameterLockEditor({
   onVolumeChange,
   onTieToggle,
   onClearLock,
-  onDismiss,
+  disabled = false,
   sampleId,
   transpose = 0,
 }: ParameterLockEditorProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
   const pitchId = useId();
   const volumeId = useId();
   const pitchWarningId = useId();
-
-  // Auto-dismiss when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        onDismiss();
-      }
-    };
-
-    // Delay to avoid immediate dismissal when opening
-    const timer = setTimeout(() => {
-      document.addEventListener('mousedown', handleClickOutside);
-    }, 50);
-
-    return () => {
-      clearTimeout(timer);
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [onDismiss]);
 
   // Get display values with defaults
   const pitch = lock?.pitch ?? 0;
@@ -129,7 +109,7 @@ export function ParameterLockEditor({
   }, [onVolumeChange]);
 
   return (
-    <div className="plock-inline" ref={containerRef}>
+    <div className="plock-inline">
       <span className="plock-step">Step {step + 1}</span>
 
       <div className="plock-control">
@@ -143,6 +123,7 @@ export function ParameterLockEditor({
           max={maxPitch}
           value={Math.max(minPitch, Math.min(maxPitch, pitch))}
           onChange={handlePitchSlider}
+          disabled={disabled}
           className={`plock-slider pitch ${isOutOfRange ? 'out-of-range' : ''}`}
           aria-describedby={isOutOfRange ? pitchWarningId : undefined}
         />
@@ -165,6 +146,7 @@ export function ParameterLockEditor({
           max="100"
           value={volume * 100}
           onChange={handleVolumeSlider}
+          disabled={disabled}
           className="plock-slider volume"
         />
         <span className="plock-value">{Math.round(volume * 100)}%</span>
@@ -175,6 +157,7 @@ export function ParameterLockEditor({
         <button
           className={`plock-tie ${hasTie ? 'active' : ''}`}
           onClick={onTieToggle}
+          disabled={disabled}
           title="Continue note from previous step without a new attack"
           aria-pressed={hasTie}
         >
@@ -186,6 +169,7 @@ export function ParameterLockEditor({
         <button
           className="plock-clear"
           onClick={onClearLock}
+          disabled={disabled}
           title="Clear parameter lock"
         >
           Clear lock

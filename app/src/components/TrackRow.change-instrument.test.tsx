@@ -2,16 +2,16 @@
 /**
  * Change Instrument (issue #63): the track row's entry points.
  *
- * Desktop, the mobile inline drawer, and the landscape TrackDrawer must all
- * open the SAME picker panel over the SAME catalog. The InlineDrawer seam is
- * retained for TrackRow's responsive contract, while the product's narrow
- * portrait mode intentionally substitutes the read-only PortraitGrid.
+ * On desktop the row's badge asks the editor dock to show the picker in its
+ * Track pane (specs/PIANO-ROLL-DOCK.md, phase 7; StepSequencer.dock.test.tsx
+ * covers the dock side). Landscape hides the badge; its rows reach the same
+ * picker through the dock's Track pane, which the track name opens (phase 8).
  *
  * See specs/CHANGE-INSTRUMENT.md §7.
  */
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { Track } from '../types';
 import { TrackRow } from './TrackRow';
 
@@ -45,17 +45,11 @@ function renderRow(overrides: Partial<React.ComponentProps<typeof TrackRow>> = {
       currentStep={-1}
       swing={0}
       anySoloed={false}
-      hasSteps={false}
-      canDelete
       isCopySource={false}
       isCopyTarget={false}
       onToggleStep={vi.fn()}
       onToggleMute={vi.fn()}
       onToggleSolo={vi.fn()}
-      onClear={vi.fn()}
-      onDelete={vi.fn()}
-      onStartCopy={vi.fn()}
-      onCopyTo={vi.fn()}
       {...overrides}
     />
   );
@@ -79,150 +73,114 @@ describe('TrackRow change instrument', () => {
     expect(document.querySelector('.instrument-panel-container')).toBeNull();
   });
 
-  it('keeps the picker panel collapsed until the toggle is used', () => {
-    renderRow({ onSetInstrument: vi.fn() });
+  it('renders no picker under a landscape row: the dock owns it there too', () => {
+    renderRow({ onSetInstrument: vi.fn(), orientationMode: 'landscape' });
 
-    const panel = document.querySelector('.instrument-panel-container')!;
-    // Collapsed means zero-height and inert, not merely hidden: the landscape
-    // visual baseline depends on it contributing no layout.
-    expect(panel.className).not.toContain('expanded');
-    expect(panel.getAttribute('aria-hidden')).toBe('true');
-    expect(screen.getByTestId('change-instrument-track-1').getAttribute('aria-expanded'))
-      .toBe('false');
-
-    // The catalog itself is not in the document while closed. Leaving it there
-    // duplicates the Add Track picker's accessible names, so a query for an
-    // instrument by name resolves into this zero-height panel instead of the
-    // add-track control — which is exactly how it broke the drag-reorder and
-    // multiplayer suites.
-    expect(screen.queryByText('Change Instrument')).toBeNull();
-    expect(screen.queryByTestId('set-instrument-kick')).toBeNull();
+    expect(document.querySelector('.instrument-panel-container')).toBeNull();
+    expect(document.querySelector('.track-drawer')).toBeNull();
+    // No catalogue in the document: it would duplicate the Add Track
+    // picker's accessible names.
+    expect(document.querySelector('.sample-picker')).toBeNull();
     expect(document.querySelectorAll('.instrument-btn')).toHaveLength(0);
   });
 
-  it('places the desktop toggle in an explicit grid column', () => {
+  it('renders no picker under a desktop row: the dock owns it', () => {
+    renderRow({ onSetInstrument: vi.fn() });
+    expect(document.querySelector('.instrument-panel-container')).toBeNull();
+    expect(document.querySelector('.sample-picker')).toBeNull();
+  });
+
+  it('puts the desktop toggle in the badge slot of the placed controls line', () => {
     // .track-left is a fully-allocated grid whose every child is explicitly
-    // placed. A child without a grid-column is auto-placed into an implicit
-    // SECOND row, which grew every track row from 48px to 84px and moved the
-    // drag-reorder drop targets — 11 reorder tests failed while this component
-    // looked fine in isolation. jsdom computes no layout, so assert the
-    // contract that layout depends on: the class the stylesheet places.
+    // placed. A child without a placement is auto-placed into an implicit
+    // extra row, which once grew every track row from 48px to 84px and moved
+    // the drag-reorder drop targets — 11 reorder tests failed while this
+    // component looked fine in isolation. jsdom computes no layout, so assert
+    // the contract that layout depends on: the toggle sits in the badge slot
+    // of line two, and line two is a direct, placed child of .track-left.
     renderRow({ onSetInstrument: vi.fn() });
 
     const toggle = screen.getByTestId('change-instrument-track-1');
     expect(toggle.classList.contains('instrument-toggle')).toBe(true);
-    expect(toggle.parentElement?.classList.contains('track-left')).toBe(true);
+    expect(toggle.classList.contains('track-instrument-badge')).toBe(true);
+    const group = toggle.parentElement!;
+    expect(group.classList.contains('track-disclosure-group')).toBe(true);
+    expect(group.firstElementChild).toBe(toggle);
+    expect(group.parentElement?.classList.contains('track-controls')).toBe(true);
+    expect(group.parentElement?.parentElement?.classList.contains('track-left')).toBe(true);
   });
 
-  it('opens the picker from the desktop toggle and marks the current instrument', () => {
-    renderRow({ onSetInstrument: vi.fn() });
+  it('asks the dock for the picker from the desktop badge', () => {
+    const onToggleInstrumentPicker = vi.fn();
+    renderRow({ onSetInstrument: vi.fn(), onToggleInstrumentPicker });
 
-    fireEvent.click(screen.getByTestId('change-instrument-track-1'));
-
-    const panel = document.querySelector('.instrument-panel-container')!;
-    expect(panel.className).toContain('expanded');
-    expect(screen.getByText('Change Instrument')).toBeTruthy();
-    expect(screen.getByTestId('set-instrument-tone:fm-bass').className).toContain('current');
+    const toggle = screen.getByTestId('change-instrument-track-1');
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(toggle.hasAttribute('aria-controls')).toBe(false);
+    fireEvent.click(toggle);
+    expect(onToggleInstrumentPicker).toHaveBeenCalledWith(toggle);
+    // Nothing opens under the row.
+    expect(document.querySelector('.sample-picker')).toBeNull();
   });
 
-  it('opens the same panel from the mobile drawer row', () => {
-    renderRow({ onSetInstrument: vi.fn() });
+  it('shows the dock picker state on the badge', () => {
+    renderRow({ onSetInstrument: vi.fn(), onToggleInstrumentPicker: vi.fn(), isInstrumentPickerOpen: true });
 
-    // The inline drawer is unmounted until the "tap to edit" strip opens it.
-    fireEvent.click(document.querySelector('.mobile-edit-panel')!);
-
-    const drawerButton = screen.getByTestId('drawer-change-instrument-track-1');
-    // The drawer row shows what the track plays now, so a person does not have
-    // to open the picker to find out.
-    expect(drawerButton.textContent).toContain('FM Bass');
-
-    fireEvent.click(drawerButton);
-
-    const panel = document.querySelector('.instrument-panel-container')!;
-    expect(panel.className).toContain('expanded');
-    expect(drawerButton.getAttribute('aria-controls')).toBe('instrument-panel-track-1');
+    const toggle = screen.getByTestId('change-instrument-track-1');
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(toggle.getAttribute('aria-controls')).toBe('dock-instrument-picker');
+    expect(toggle.classList.contains('active')).toBe(true);
   });
 
-  it('opens the same panel from the landscape drawer', () => {
-    renderRow({
+  it('a landscape name asks the dock for this track\'s Track pane', () => {
+    const onToggleTrackPane = vi.fn();
+    const onOpenDock = vi.fn();
+    const { rerender } = renderRow({
       onSetInstrument: vi.fn(),
       orientationMode: 'landscape',
-      isLandscapeDrawerOpen: true,
-      onToggleLandscapeDrawer: vi.fn(),
+      onToggleTrackPane,
+      onOpenDock,
     });
 
-    fireEvent.click(screen.getByTestId('landscape-change-instrument-track-1'));
+    const name = document.querySelector<HTMLElement>('.track-name')!;
+    expect(name.getAttribute('aria-expanded')).toBe('false');
+    // The dock is always in the document (inert while closed).
+    expect(name.getAttribute('aria-controls')).toBe('editor-dock');
+    fireEvent.keyDown(name, { key: 'Enter' });
+    expect(onToggleTrackPane).toHaveBeenCalledTimes(1);
+    expect(onOpenDock).not.toHaveBeenCalled();
 
-    expect(document.querySelector('.instrument-panel-container')!.className)
-      .toContain('expanded');
-    // One picker, not a second cramped list built for landscape.
-    expect(document.querySelectorAll('.sample-picker.variant-change')).toHaveLength(1);
+    rerender(
+      <TrackRow
+        track={track}
+        trackIndex={0}
+        currentStep={-1}
+        swing={0}
+        anySoloed={false}
+        isCopySource={false}
+        isCopyTarget={false}
+        onToggleStep={vi.fn()}
+        onToggleMute={vi.fn()}
+        onToggleSolo={vi.fn()}
+        onSetInstrument={vi.fn()}
+        orientationMode="landscape"
+        isDocked
+        isTrackPaneDocked
+        onToggleTrackPane={onToggleTrackPane}
+      />
+    );
+    expect(document.querySelector('.track-name')!.getAttribute('aria-expanded')).toBe('true');
   });
 
-  it('closes the landscape picker when Escape dismisses its drawer', () => {
-    const onToggleLandscapeDrawer = vi.fn();
-    renderRow({
-      onSetInstrument: vi.fn(),
-      orientationMode: 'landscape',
-      isLandscapeDrawerOpen: true,
-      onToggleLandscapeDrawer,
-    });
+  it('a desktop name docks the track and is not a disclosure', () => {
+    const onToggleTrackPane = vi.fn();
+    const onOpenDock = vi.fn();
+    renderRow({ onSetInstrument: vi.fn(), onToggleTrackPane, onOpenDock });
 
-    fireEvent.click(screen.getByTestId('landscape-change-instrument-track-1'));
-    fireEvent.keyDown(document, { key: 'Escape' });
-
-    expect(onToggleLandscapeDrawer).toHaveBeenCalledTimes(1);
-    expect(document.querySelector('.instrument-panel-container')!.className)
-      .not.toContain('expanded');
-  });
-
-  it('commits the chosen instrument and closes the picker', () => {
-    const onSetInstrument = vi.fn();
-    renderRow({ onSetInstrument });
-
-    fireEvent.click(screen.getByTestId('change-instrument-track-1'));
-    fireEvent.click(screen.getByTestId('set-instrument-sampled:808-kick'));
-
-    expect(onSetInstrument).toHaveBeenCalledWith('sampled:808-kick');
-    // No name argument: renaming stays a separate action.
-    expect(onSetInstrument).toHaveBeenCalledTimes(1);
-    expect(onSetInstrument.mock.calls[0]).toHaveLength(1);
-    expect(document.querySelector('.instrument-panel-container')!.className)
-      .not.toContain('expanded');
-  });
-
-  it('restores focus to the opener after keyboard-style selection', async () => {
-    renderRow({ onSetInstrument: vi.fn() });
-    const toggle = screen.getByTestId('change-instrument-track-1');
-    fireEvent.click(toggle);
-    const option = screen.getByTestId('set-instrument-sampled:808-kick');
-    option.focus();
-
-    fireEvent.click(option);
-
-    await waitFor(() => expect(document.activeElement).toBe(toggle));
-  });
-
-  it('falls back to the visible track name when the opener becomes hidden', async () => {
-    renderRow({ onSetInstrument: vi.fn() });
-    const toggle = screen.getByTestId('change-instrument-track-1');
-    fireEvent.click(toggle);
-    toggle.style.display = 'none';
-
-    fireEvent.click(screen.getByTestId('set-instrument-sampled:808-kick'));
-
-    await waitFor(() => {
-      expect(document.activeElement).toBe(document.querySelector('.track-name'));
-    });
-  });
-
-  it('does not rename the track when the instrument changes', () => {
-    const onSetName = vi.fn();
-    renderRow({ onSetInstrument: vi.fn(), onSetName });
-
-    fireEvent.click(screen.getByTestId('change-instrument-track-1'));
-    fireEvent.click(screen.getByTestId('set-instrument-sampled:808-kick'));
-
-    expect(onSetName).not.toHaveBeenCalled();
+    const name = document.querySelector<HTMLElement>('.track-name')!;
+    expect(name.hasAttribute('aria-expanded')).toBe(false);
+    fireEvent.keyDown(name, { key: 'Enter' });
+    expect(onOpenDock).toHaveBeenCalledTimes(1);
+    expect(onToggleTrackPane).not.toHaveBeenCalled();
   });
 });

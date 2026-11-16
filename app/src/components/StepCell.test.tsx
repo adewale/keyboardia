@@ -11,6 +11,8 @@
 
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { fireEvent, render, screen, cleanup } from '@testing-library/react';
+import * as fs from 'fs';
+import * as path from 'path';
 import { StepCell } from './StepCell';
 
 // Clean up after each test to prevent element accumulation
@@ -300,6 +302,110 @@ describe('StepCell', () => {
       );
       const badge = screen.getByText('⌒');
       expect(badge.classList.contains('tie')).toBe(true);
+    });
+  });
+
+  describe('Pitch Contour Mark', () => {
+    const contourOf = (container: HTMLElement) =>
+      container.querySelector<HTMLElement>('[data-testid="step-contour"]');
+
+    /**
+     * The mark's top, in px from the padding box, for a cell of `innerHeight`
+     * (cell height minus the 2px borders), evaluated from StepCell.css's own
+     * `calc((100% - Apx) - var(--contour-fraction) * (100% - Bpx))`.
+     */
+    function contourTop(fraction: number, innerHeight: number): number {
+      const css = fs.readFileSync(path.join(__dirname, 'StepCell.css'), 'utf-8');
+      const rule = css.match(/\.step-cell \.step-contour \{[^}]*\}/)?.[0] ?? '';
+      const m = rule.match(
+        /top: calc\(\(100% - (\d+)px\) - var\(--contour-fraction, [\d.]+\) \* \(100% - (\d+)px\)\)/,
+      );
+      expect(m, 'StepCell.css .step-contour top formula').not.toBeNull();
+      const [, a, b] = m!;
+      return innerHeight - Number(a) - fraction * (innerHeight - Number(b));
+    }
+
+    it('SC-P01: renders a contour for an active melodic step at the mapped position', () => {
+      const { container } = render(
+        <StepCell {...defaultProps} active={true} contour={{ fraction: 0.75, tied: false }} />
+      );
+      const mark = contourOf(container);
+      expect(mark).not.toBeNull();
+      expect(mark!.style.getPropertyValue('--contour-fraction')).toBe('0.75');
+      expect(mark!.classList.contains('tied')).toBe(false);
+      expect(mark!.getAttribute('aria-hidden')).toBe('true');
+    });
+
+    it('SC-P02: the CSS maps the fraction to the prototype geometry and scales with the cell', () => {
+      // 36px cell, 32px inside the border: top = 24 - fraction x 20 (prototype).
+      expect(contourTop(0, 32)).toBe(24);
+      expect(contourTop(0.5, 32)).toBe(14);
+      expect(contourTop(1, 32)).toBe(4);
+      // 44px and 48px mobile cells keep the 4px top and 5px bottom margins.
+      expect(contourTop(0, 40)).toBe(32);
+      expect(contourTop(1, 40)).toBe(4);
+      expect(contourTop(0, 44)).toBe(36);
+      expect(contourTop(1, 44)).toBe(4);
+    });
+
+    it('SC-P03: a tied step extends the mark to the previous cell', () => {
+      const { container } = render(
+        <StepCell
+          {...defaultProps}
+          active={true}
+          parameterLock={{ tie: true }}
+          contour={{ fraction: 0.5, tied: true }}
+        />
+      );
+      expect(contourOf(container)!.classList.contains('tied')).toBe(true);
+    });
+
+    it('SC-P04: no contour on drum tracks (no contour prop)', () => {
+      const { container } = render(
+        <StepCell {...defaultProps} active={true} parameterLock={{ pitch: 5 }} />
+      );
+      expect(contourOf(container)).toBeNull();
+      // Drum cells keep the pitch badge.
+      expect(screen.getByText('↑')).toBeTruthy();
+    });
+
+    it('SC-P05: no contour on an inactive step', () => {
+      const { container } = render(
+        <StepCell {...defaultProps} active={false} contour={{ fraction: 0.5, tied: false }} />
+      );
+      expect(contourOf(container)).toBeNull();
+    });
+
+    it('SC-P06: the contour replaces the pitch and tie badges; the volume badge stays clear of it', () => {
+      const { container } = render(
+        <StepCell
+          {...defaultProps}
+          active={true}
+          parameterLock={{ pitch: 5, tie: true, volume: 0.5 }}
+          contour={{ fraction: 1, tied: true }}
+        />
+      );
+      expect(screen.queryByText('↑')).toBeNull();
+      expect(screen.queryByText('⌒')).toBeNull();
+      expect(screen.getByText('−').classList.contains('volume')).toBe(true);
+      expect(contourOf(container)!.classList.contains('beside-badges')).toBe(true);
+      // The lock is still announced and outlined.
+      const button = screen.getByRole('button');
+      expect(button.classList.contains('has-lock')).toBe(true);
+      expect(button.getAttribute('aria-label')).toContain('has parameter lock');
+    });
+
+    it('SC-P07: a pitch-locked melodic step without a volume lock shows no badges', () => {
+      const { container } = render(
+        <StepCell
+          {...defaultProps}
+          active={true}
+          parameterLock={{ pitch: -3 }}
+          contour={{ fraction: 0, tied: false }}
+        />
+      );
+      expect(container.querySelector('.lock-badges')).toBeNull();
+      expect(contourOf(container)!.classList.contains('beside-badges')).toBe(false);
     });
   });
 });

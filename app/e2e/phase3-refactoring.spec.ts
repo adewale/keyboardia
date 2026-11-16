@@ -65,14 +65,18 @@ async function createTestSession(request: APIRequestContext) {
 }
 
 /**
- * Helper to open pattern tools panel for a track
+ * Helper to open pattern tools for a track: they live in the editor dock's
+ * Track pane (specs/PIANO-ROLL-DOCK.md, phase 7). Clicking a track's name
+ * docks it; the Track chip shows its pane.
  */
 async function openPatternTools(page: Page, trackIndex = 0) {
-  const trackRow = page.locator('.track-row').nth(trackIndex);
-  const patternToolsToggle = trackRow.locator('.pattern-tools-toggle');
-  await patternToolsToggle.click();
-  // Wait for panel to expand
-  await page.waitForTimeout(300);
+  const trackRow = page.locator('.track-row-wrapper').nth(trackIndex);
+  await trackRow.locator('.track-name').click();
+  const dock = page.getByTestId('editor-dock');
+  await expect(dock).toHaveClass(/\bopen\b/);
+  await dock.getByRole('group', { name: 'Dock pane' }).getByRole('button', { name: 'Track', exact: true }).click();
+  await expect(dock).toHaveAttribute('data-pane', 'track');
+  await expect(dock.locator('.pattern-tools-panel')).toBeVisible();
 }
 
 /**
@@ -547,26 +551,15 @@ test.describe('Track operations', () => {
     const activeBefore = await getActiveStepIndices(page);
     expect(activeBefore.length).toBe(4);
 
-    // Right-click on track to get context menu, or use clear button if available
-    const trackRow = page.locator('.track-row').first();
-    const clearButton = trackRow.locator('.clear-button, button[title*="Clear"]');
-
-    if (await clearButton.isVisible({ timeout: 1000 }).catch(() => false)) {
-      await clearButton.click();
-    } else {
-      // Try right-click context menu
-      await trackRow.click({ button: 'right' });
-      const clearMenuItem = page.locator('text=Clear');
-      if (await clearMenuItem.isVisible({ timeout: 1000 }).catch(() => false)) {
-        await clearMenuItem.click();
-      }
-    }
-
-    await page.waitForTimeout(300);
+    // Clear lives in the editor dock's Track pane (specs/PIANO-ROLL-DOCK.md);
+    // a track's name docks it, and a drum track docks on Track.
+    await page.locator('.track-row .track-name').first().click();
+    const dock = page.getByTestId('editor-dock');
+    await dock.getByRole('group', { name: 'Dock pane' }).getByRole('button', { name: 'Track', exact: true }).click();
+    await dock.getByRole('group', { name: 'Track actions' }).getByRole('button', { name: 'Clear' }).click();
 
     // All steps should be cleared
-    const activeAfter = await getActiveStepIndices(page);
-    expect(activeAfter.length).toBe(0);
+    await expectActiveStepIndices(page, []);
   });
 });
 

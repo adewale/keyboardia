@@ -1,0 +1,578 @@
+/*
+ * Editor dock (specs/PIANO-ROLL-DOCK.md, phases 2, 6, 7 and 8).
+ *
+ * The dock is the last child of .tracks-inner, so it shares the rows'
+ * horizontal scroller (one scrollbar, step columns aligned) and pins to the
+ * bottom of .tracks, which is also the vertical scroller on desktop.
+ * Rows of cells stay contiguous above it; nothing is inserted between them.
+ * Mobile landscape turns the same element into a bottom dock (see the end of
+ * this file); portrait renders no rows and no dock.
+ */
+
+.dock {
+  position: sticky;
+  bottom: 0;
+  z-index: 6; /* above the sticky .track-left (3); see the spec's layer table */
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 200ms ease-out, margin-top 200ms ease-out;
+  border-radius: 8px 8px 0 0;
+  /* Closed, the dock takes no space: cancel the 2px row gap above it so the
+     track area is exactly as tall as before the dock existed. */
+  margin-top: -2px;
+}
+
+.dock.open {
+  grid-template-rows: 1fr;
+  margin-top: 6px;
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.45);
+}
+
+.dock-inner {
+  min-height: 0;
+  /* Clip during the open/close animation. `clip`, unlike `hidden`, does not
+     make a scroll container, so the sticky header and the roll's sticky pitch
+     column still stick to .tracks. `hidden` is the fallback. */
+  overflow: hidden;
+  overflow: clip;
+}
+
+.dock-panel {
+  min-width: max-content;
+  background: var(--color-surface);
+  /* Top edge only: a left border would shift every dock column 1px off the
+     row columns above it. */
+  border-top: 1px solid var(--color-border-light);
+  border-radius: 8px 8px 0 0;
+}
+
+/* Header: sticky-left, sized to the scroller's visible width by EditorDock. */
+.dock-head {
+  position: sticky;
+  left: 0;
+  z-index: 7;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  box-sizing: border-box;
+  padding: 6px 10px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  border-radius: 8px 8px 0 0;
+}
+
+.dock-chips {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 6px;
+  background: var(--color-surface-elevated);
+}
+
+.dock-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.dock-chip:hover {
+  color: var(--color-text);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.dock-chip.active {
+  background: var(--color-accent);
+  color: var(--color-bg);
+}
+
+/* The Notes chip on a drum track: there is no pitch to show. */
+.dock-chip:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.dock-chip:disabled:hover {
+  color: var(--color-text-muted);
+  background: transparent;
+}
+
+.dock-chip:focus-visible,
+.dock-icon-button:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+/* Category tick: the one place category colour appears on a tab. */
+.dock-tick {
+  width: 3px;
+  height: 12px;
+  border-radius: 2px;
+  background: var(--dock-tick, var(--color-text-muted));
+  flex: 0 0 auto;
+}
+
+.dock-track-tab[data-category="drums"] { --dock-tick: var(--color-drums, var(--color-orange)); }
+.dock-track-tab[data-category="bass"] { --dock-tick: var(--color-bass, var(--color-purple)); }
+.dock-track-tab[data-category="keys"] { --dock-tick: var(--color-keys, var(--color-blue)); }
+.dock-track-tab[data-category="leads"] { --dock-tick: var(--color-leads, var(--color-pink)); }
+.dock-track-tab[data-category="pads"] { --dock-tick: var(--color-pads, var(--color-green)); }
+.dock-track-tab[data-category="fx"] { --dock-tick: var(--color-fx, var(--color-cyan)); }
+
+.dock-track-tab.active .dock-tick {
+  background: var(--color-bg);
+}
+
+.dock-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.dock-title b {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+/* Ghost toggles: a dashed swatch in the other track's category colour,
+   filled while that track's ghosts show. */
+.dock-ghost-toggle[aria-pressed="true"] {
+  color: var(--color-text);
+  background: var(--color-surface-active);
+}
+
+.dock-ghost-swatch {
+  width: 10px;
+  height: 10px;
+  box-sizing: border-box;
+  border-radius: 2px;
+  border: 1px dashed var(--gc);
+  flex: 0 0 auto;
+}
+
+.dock-ghost-toggle[aria-pressed="true"] .dock-ghost-swatch {
+  background: var(--gc);
+  border-style: solid;
+}
+
+.dock-head-end {
+  margin-left: auto;
+  display: inline-flex;
+  gap: 6px;
+}
+
+.dock-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  gap: 4px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.dock-icon-button:hover {
+  color: var(--color-text);
+  border-color: var(--color-border-light);
+}
+
+/*
+ * Toolbar: one strip under the header that swaps content with the pane
+ * (Notes, Step, Track). Sticky-left and sized to the scroller's visible width
+ * like the header, so its controls stay on screen while the grid scrolls.
+ * It wraps instead of scrolling: the roll is the dock's only vertical
+ * scroller.
+ */
+.dock-tools {
+  position: sticky;
+  left: 0;
+  z-index: 7;
+  box-sizing: border-box;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dock-pane {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  min-height: 40px;
+  box-sizing: border-box;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.dock-tool-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.dock-tool-label {
+  margin-right: 2px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dock-tool-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 9px;
+  border: 1px solid var(--color-border-hover);
+  border-radius: 4px;
+  background: var(--color-surface-elevated);
+  color: var(--color-text);
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.dock-tool-button:hover:not(:disabled) {
+  border-color: var(--color-border-light);
+  background: var(--color-surface-hover);
+}
+
+.dock-tool-button:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+.dock-tool-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.dock-tool-button.active {
+  border-color: var(--color-accent);
+  color: var(--color-accent-text);
+}
+
+.dock-tool-button.paste {
+  border-color: var(--color-success);
+  color: var(--color-success-text);
+}
+
+.dock-tool-button.destructive:hover:not(:disabled) {
+  border-color: var(--color-error);
+  color: var(--color-error-text);
+}
+
+.dock-tool-readout {
+  color: var(--color-text);
+}
+
+.dock-pane-hint {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+/* FM parameters in the Track pane, on the app's palette. */
+.dock-fm-controls .fm-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dock-fm-controls .fm-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-purple-text);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dock-fm-controls .fm-slider {
+  width: 110px;
+  accent-color: var(--color-purple);
+  cursor: pointer;
+}
+
+.dock-fm-controls .fm-value {
+  min-width: 36px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-purple-text);
+  text-align: right;
+}
+
+.dock-fm-controls .fm-slider:disabled {
+  cursor: default;
+}
+
+/* The Track pane's instrument picker, under its toolbar row. */
+.dock-instrument-picker {
+  padding: 0 10px 8px;
+}
+
+.dock-instrument-picker .sample-picker.variant-change {
+  max-width: none;
+}
+
+/* A drum track docks for Step and Track; its roll area says why it is empty. */
+.dock-no-pitch {
+  margin: 0;
+  padding: 12px 10px;
+  position: sticky;
+  left: 0;
+  width: max-content;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+/*
+ * Body. The piano roll's own grid viewport (.dock-scroll) is the dock's only
+ * vertical scroller: the body does not scroll, so it is not a scroll
+ * container, and the roll's sticky-left keyboard and the sticky header stick
+ * to .tracks during horizontal scroll. The roll's detent height is clamped to
+ * --dock-roll-max (set by EditorDock from the scroller's largest scrollport)
+ * so a tall dock never pushes its own header out of the scroller.
+ */
+.dock-body .piano-roll-editor__left,
+.dock-body .piano-roll-editor .dock-scroll {
+  max-height: var(--dock-roll-max, none);
+}
+
+/* Published session: the dock opens and plays, but takes the read-only scrim. */
+.dock.read-only .dock-body {
+  filter: saturate(0.85);
+}
+
+.dock.read-only :is(.dock-body, .dock-tools) :is(button, [role="button"]) {
+  cursor: default;
+}
+
+/*
+ * Published rows block pointer events; the pitch toggle stays reachable so a
+ * listener can open the read-only dock (StepSequencer withholds every edit).
+ */
+.step-sequencer.published .track-row .expand-toggle {
+  pointer-events: auto;
+}
+
+/*
+ * Row linkage, desktop and landscape: the docked row carries an accent
+ * outline, its pitch toggle turns accent, and its active cells pulse once
+ * when the dock opens.
+ */
+.step-sequencer:not([data-orientation="portrait"]) .track-row-wrapper.docked .track-row {
+  box-shadow: inset 0 0 0 2px var(--color-accent);
+}
+
+.step-sequencer:not([data-orientation="portrait"]) .track-row-wrapper.docked .track-left {
+  box-shadow:
+    inset 2px 0 0 var(--color-accent),
+    inset 0 2px 0 var(--color-accent),
+    inset 0 -2px 0 var(--color-accent),
+    4px 0 8px -4px rgba(0, 0, 0, 0.2);
+}
+
+.step-sequencer:not([data-orientation="portrait"]) .track-row-wrapper.docked .expand-toggle.expanded {
+  background: var(--color-accent);
+  border-color: var(--color-accent-hover);
+  color: var(--color-bg);
+}
+
+.step-sequencer:not([data-orientation="portrait"]) .track-row-wrapper.docked .step-cell.pulse {
+  animation: dock-cell-pulse 150ms ease-out;
+}
+
+@keyframes dock-cell-pulse {
+  0% { box-shadow: 0 0 0 3px var(--color-accent); }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+/*
+ * Landscape (phase 8): a bottom dock about 45% of the viewport tall.
+ *
+ * Below 768px, and in every landscape layout, .tracks is not height-capped
+ * and each row's .steps scrolls on its own, so the dock cannot pin to the
+ * bottom of one shared scroller. It is fixed to the bottom of the viewport
+ * instead, over the scroller's visible box (EditorDock sets its left and
+ * width), and the page keeps room under the rows so every row can scroll
+ * above it. The roll scrolls horizontally on its own and is synced with the
+ * docked row's .steps (EditorDock), so it aligns with that row only.
+ *
+ * Header and toolbar share one strip so the roll keeps most of the height:
+ * pane chips, the docked track's name, the active pane's controls (scrolling
+ * sideways), close. Track tabs are left out: the rows' ♪ toggles and names
+ * switch tracks. Every control in the strip is a 44px target.
+ */
+.step-sequencer[data-orientation="landscape"] .dock,
+.step-sequencer[data-orientation="landscape"] .dock.open {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  margin-top: 0;
+}
+
+.step-sequencer[data-orientation="landscape"] .dock-panel {
+  box-sizing: border-box;
+  min-width: 0;
+  height: 45vh;
+  height: 45dvh;
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas:
+    "panes title tools end"
+    "body body body body";
+  align-items: center;
+  column-gap: 6px;
+}
+
+/* The header and toolbar boxes dissolve; their children are placed below. */
+.step-sequencer[data-orientation="landscape"] .dock-head,
+.step-sequencer[data-orientation="landscape"] .dock-tools {
+  display: contents;
+}
+
+.step-sequencer[data-orientation="landscape"] .dock-track-tabs,
+.step-sequencer[data-orientation="landscape"] .dock-title-instrument {
+  display: none;
+}
+
+.step-sequencer[data-orientation="landscape"] .dock-pane-chips {
+  grid-area: panes;
+  flex-wrap: nowrap;
+  margin: 2px 0 2px 4px;
+}
+
+.step-sequencer[data-orientation="landscape"] .dock-title {
+  grid-area: title;
+  max-width: 24vw;
+  overflow: hidden;
+}
+
+.step-sequencer[data-orientation="landscape"] .dock-head-end {
+  grid-area: end;
+  margin: 0 4px 0 0;
+}
+
+/* The active pane's controls: one line that scrolls sideways, never wraps. */
+.step-sequencer[data-orientation="landscape"] .dock-pane {
+  grid-area: tools;
+  flex-wrap: nowrap;
+  min-width: 0;
+  min-height: 0;
+  padding: 2px 4px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.step-sequencer[data-orientation="landscape"] .dock-pane::-webkit-scrollbar {
+  display: none;
+}
+
+.step-sequencer[data-orientation="landscape"] .dock-pane :is(.dock-tool-group, .dock-chips, .pattern-tools-panel, .pattern-tools-group, .plock-inline) {
+  flex-wrap: nowrap;
+  flex: 0 0 auto;
+}
+
+/* 44px touch targets for every control in the strip. */
+.step-sequencer[data-orientation="landscape"] .dock :is(
+  .dock-chip,
+  .dock-icon-button,
+  .dock-tool-button,
+  .pattern-tool-btn,
+  .transpose-trigger,
+  .step-count-trigger,
+  .plock-tie,
+  .plock-clear
+) {
+  box-sizing: border-box;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+/* Touch has no hover: Delete differs from its neighbours at rest. */
+.step-sequencer[data-orientation="landscape"] .dock-tool-button.destructive:not(:disabled) {
+  border-color: var(--color-error);
+  color: var(--color-error-text);
+}
+
+/* The roll fills the rest of the dock and scrolls sideways on its own. */
+.step-sequencer[data-orientation="landscape"] .dock-body {
+  grid-area: body;
+  align-self: stretch;
+  min-height: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  border-top: 1px solid var(--color-border);
+}
+
+.step-sequencer[data-orientation="landscape"] .dock-body::-webkit-scrollbar {
+  display: none;
+}
+
+.step-sequencer[data-orientation="landscape"] .dock-body .piano-roll-editor {
+  --dock-grid-h: 100%;
+  height: 100%;
+}
+
+/* The instrument picker takes the roll's place while it is open. */
+.step-sequencer[data-orientation="landscape"] .dock-instrument-picker {
+  grid-area: body;
+  align-self: stretch;
+  z-index: 4;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 8px;
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+}
+
+/* Room under the rows, so the last row can scroll above the open dock. */
+.step-sequencer[data-orientation="landscape"] .tracks-inner:has(> .dock.open) {
+  padding-bottom: 45vh;
+  padding-bottom: 45dvh;
+}
+
+/* Bringing the docked row into view keeps it clear of the dock. */
+.step-sequencer[data-orientation="landscape"] .track-row-wrapper.docked {
+  scroll-margin-bottom: calc(45dvh + 8px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dock,
+  .dock-chip {
+    transition: none;
+  }
+
+  .step-sequencer:not([data-orientation="portrait"]) .track-row-wrapper.docked .step-cell.pulse {
+    animation: none;
+  }
+}

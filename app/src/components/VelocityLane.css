@@ -32,19 +32,19 @@
   background: rgba(0, 0, 0, 0.15);
 }
 
-/* Velocity bars container */
+/* Velocity bars container. Width and each step's left edge come from
+ * step-geometry.ts (VelocityLane.tsx), so the 8px page gap after every 16th
+ * cell is kept and each bar sits under its cell. */
 .velocity-bars {
-  display: flex;
-  gap: 3px; /* Match step cell gap */
+  position: relative;
+  flex-shrink: 0;
   height: 40px;
-  align-items: flex-end;
 }
 
-/* Individual velocity step (container for bar) */
+/* Individual velocity step (container for bar): one 36px cell wide */
 .velocity-step {
-  /* Match step cell sizing: 36px width */
-  width: 36px;
-  min-width: 36px;
+  position: absolute;
+  top: 0;
   height: 100%;
   display: flex;
   align-items: flex-end;

@@ -78,7 +78,8 @@ test.describe('Velocity Lane', () => {
 
   test('should expand velocity lane when toggle is clicked', async ({ page }) => {
     // Find the velocity lane panel container (it contains the velocity-lane element)
-    // Each TrackRow has 3 panel-animation-containers: pattern tools, velocity lane, pitch view
+    // Each TrackRow has 2 panel-animation-containers: pattern tools and velocity lane
+    // (the pitch view moved to the editor dock under the grid)
     // The velocity lane container is the one that contains .velocity-lane
     const velocityPanel = page.locator('.panel-animation-container:has(.velocity-lane)').first();
 

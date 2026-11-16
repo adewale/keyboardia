@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useMemo } from 'react';
 import { clamp } from '../shared/validation';
 import type { ParameterLock, EffectsState, FMParams, ScaleState } from '../types';
 import { useGrid } from '../state/grid';
@@ -12,6 +12,33 @@ import { useTrackPrewarm } from '../audio/useTrackPrewarm';
 import { useTrackInstrumentReconcile } from '../audio/useTrackInstrumentReconcile';
 import { logger } from '../utils/logger';
 import { TrackRow } from './TrackRow';
+import { EditorDock, DOCK_TRANSITION_MS } from './EditorDock';
+import type { DockTrackActions } from './DockPanes';
+import {
+  DOCK_CLOSED,
+  EDITOR_DOCK_ID,
+  closeDock,
+  closeDockInstrumentPicker,
+  dismissDockPane,
+  dockSelectedStep,
+  effectiveDockPane,
+  isDockInstrumentPickerOpen,
+  isTrackDocked,
+  openDock,
+  reconcileDock,
+  releaseDockedTrack,
+  resolveGhostVisibility,
+  setDockPane,
+  toggleDock,
+  toggleDockDetent,
+  toggleDockInstrumentPicker,
+  toggleDockStep,
+  toggleDockTrackPane,
+  toggleGhost,
+  type DockPane,
+  type DockState,
+} from './editor-dock-state';
+import { isDrumInstrument } from '../shared/instrument-classification';
 import { TrackSkeleton } from './TrackSkeleton';
 import { Transport } from './Transport';
 import { TransportBar } from './TransportBar';
@@ -39,6 +66,21 @@ import './MixerPanel.css';
 import './PortraitHeader.css';
 import './PortraitGrid.css';
 
+/**
+ * Focus the first candidate that is in the document and rendered; returns
+ * whether one took focus.
+ */
+function focusFirstVisible(candidates: ReadonlyArray<HTMLElement | null | undefined>): boolean {
+  for (const element of candidates) {
+    if (!element?.isConnected || element.hidden) continue;
+    const style = window.getComputedStyle(element);
+    if (style.display === 'none' || style.visibility === 'hidden') continue;
+    element.focus();
+    if (document.activeElement === element) return true;
+  }
+  return false;
+}
+
 export function StepSequencer() {
   const { state, dispatch: gridDispatch } = useGrid();
   const multiplayer = useMultiplayerContext();
@@ -61,8 +103,15 @@ export function StepSequencer() {
   // Phase 11: Container ref for cursor tracking
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Landscape drawer accordion state: only one drawer open at a time
-  const [openDrawerTrackId, setOpenDrawerTrackId] = useState<string | null>(null);
+  // Editor dock (specs/PIANO-ROLL-DOCK.md): which melodic track the dock under
+  // the grid edits. Local UI state: never synced, never persisted, closed on
+  // load, and opened only on request.
+  const [dock, setDock] = useState<DockState>(DOCK_CLOSED);
+  const getDock = useStableGetter(dock);
+  const tracksRef = useRef<HTMLDivElement>(null);
+  // Set when a request opens a closed dock, so the docked row's cells pulse
+  // once after the commit that marks the row as docked.
+  const dockPulsePendingRef = useRef(false);
 
   // Phase 31I: Mixer panel state
   const [isMixerOpen, setIsMixerOpen] = useState(false);
@@ -75,18 +124,6 @@ export function StepSequencer() {
   const handleTogglePitch = useCallback(() => {
     setIsPitchOpen(prev => !prev);
   }, []);
-
-  // Landscape drawer toggle: accordion behavior (tap to open, tap again to close)
-  const handleToggleLandscapeDrawer = useCallback((trackId: string) => {
-    setOpenDrawerTrackId(prev => prev === trackId ? null : trackId);
-  }, []);
-
-  // Close landscape drawer when leaving landscape mode
-  useEffect(() => {
-    if (orientationMode !== 'landscape') {
-      setOpenDrawerTrackId(null);
-    }
-  }, [orientationMode]);
 
   // Phase 36: Keyboard shortcuts help panel state (desktop only)
   const [isShortcutsPanelOpen, setIsShortcutsPanelOpen] = useState(false);
@@ -269,17 +306,43 @@ export function StepSequencer() {
     }
   }, [dispatch, state.tracks, multiplayer]);
 
+  const rowWrapper = useCallback((trackId: string) => (
+    Array.from(tracksRef.current?.querySelectorAll<HTMLElement>('[data-track-id]') ?? [])
+      .find(element => element.dataset.trackId === trackId)
+  ), []);
+
+  // Focus a control on a track's row once the dock has rendered: the dock is
+  // about to become inert, or the control that had focus has unmounted.
+  const focusRowControl = useCallback((trackId: string, selectors: string[]) => {
+    requestAnimationFrame(() => {
+      const wrapper = rowWrapper(trackId);
+      focusFirstVisible(selectors.map(selector => wrapper?.querySelector<HTMLElement>(selector)));
+    });
+  }, [rowWrapper]);
+
   const handleClearTrack = useCallback((trackId: string) => {
     dispatch({ type: 'CLEAR_TRACK', trackId });
   }, [dispatch]);
 
   const handleDeleteTrack = useCallback((trackId: string) => {
-    // Close landscape drawer if the deleted track had it open
-    setOpenDrawerTrackId(prev => prev === trackId ? null : prev);
+    // Delete is pressed in the docked track's Track pane: the dock is about to
+    // close (and turn inert) and the row goes away, so focus would fall to the
+    // page. Hand it to the next row, or the previous one after the last.
+    const dockElement = tracksRef.current?.querySelector(`#${EDITOR_DOCK_ID}`);
+    if (dockElement?.contains(document.activeElement)) {
+      const ids = getState().tracks.map(t => t.id);
+      const index = ids.indexOf(trackId);
+      const neighbour = index < 0 ? undefined : ids[index + 1] ?? ids[index - 1];
+      if (neighbour) focusRowControl(neighbour, ['[data-dock-toggle]', '.track-name']);
+    }
+    // Deleting the docked track closes the dock, and deleting the copy source
+    // ends copy mode (a collaborator's delete is caught during render).
+    setDock(prev => releaseDockedTrack(prev, trackId));
+    setCopySource(prev => (prev === trackId ? null : prev));
     // Clean up audio engine resources (GainNode) to prevent memory leak
     audioEngine.removeTrackGain(trackId);
     dispatch({ type: 'DELETE_TRACK', trackId });
-  }, [dispatch]);
+  }, [dispatch, getState, focusRowControl]);
 
   const handleSetParameterLock = useCallback((trackId: string, step: number, lock: ParameterLock | null) => {
     dispatch({ type: 'SET_PARAMETER_LOCK', trackId, step, lock });
@@ -474,6 +537,107 @@ export function StepSequencer() {
     }
   }, [copySource, dispatch]);
 
+  // Editor dock handlers. Reading the committed dock state (rather than a
+  // functional update) keeps the "was it closed?" check out of the updater,
+  // which StrictMode may run twice.
+  const commitDock = useCallback((next: DockState) => {
+    if (!getDock().open && next.open) dockPulsePendingRef.current = true;
+    setDock(next);
+  }, [getDock]);
+
+  const handleOpenDock = useCallback((trackId: string) => {
+    commitDock(openDock(getDock(), trackId));
+  }, [commitDock, getDock]);
+
+  const handleToggleDock = useCallback((trackId: string) => {
+    commitDock(toggleDock(getDock(), trackId));
+  }, [commitDock, getDock]);
+
+  const handleCloseDock = useCallback(({ restoreFocus }: { restoreFocus: boolean }) => {
+    const { trackId } = getDock();
+    setDock(closeDock);
+    // Focus was inside the dock, which is about to become inert: hand it back
+    // to the row the dock was editing (its pitch toggle, or a drum's name).
+    if (restoreFocus && trackId) {
+      focusRowControl(trackId, ['[data-dock-toggle]', '.track-name']);
+    }
+  }, [getDock, focusRowControl]);
+
+  const handleSetDockPane = useCallback((pane: DockPane) => {
+    setDock(prev => setDockPane(prev, pane));
+  }, []);
+
+  const handleToggleDockDetent = useCallback(() => {
+    setDock(toggleDockDetent);
+  }, []);
+
+  const hasPitch = useCallback((trackId: string | null) => {
+    const track = trackId ? getState().tracks.find(t => t.id === trackId) : undefined;
+    return !!track && !isDrumInstrument(track.sampleId);
+  }, [getState]);
+
+  // A track name in landscape: that track's Track pane, which holds what the
+  // landscape drawer held (transpose, steps, instrument, pattern, actions).
+  const handleToggleDockTrackPane = useCallback((trackId: string) => {
+    commitDock(toggleDockTrackPane(getDock(), trackId, hasPitch(trackId)));
+  }, [commitDock, getDock, hasPitch]);
+
+  // Shift+click or long-press on a step, in a row or in the roll: the Step
+  // pane for that step; the same step again leaves the Step pane.
+  const handleSelectDockStep = useCallback((trackId: string, step: number) => {
+    commitDock(toggleDockStep(getDock(), trackId, step, hasPitch(trackId)));
+  }, [commitDock, getDock, hasPitch]);
+
+  // Escape inside the dock (or on the grid while the Step pane shows): back
+  // to Notes, or close the dock from Notes or for a track without pitch.
+  const handleDismissDockPane = useCallback(() => {
+    const current = getDock();
+    const next = dismissDockPane(current, hasPitch(current.trackId));
+    if (!next.open && current.open) {
+      handleCloseDock({ restoreFocus: tracksRef.current?.querySelector(`#${EDITOR_DOCK_ID}`)?.contains(document.activeElement) ?? false });
+      return;
+    }
+    setDock(next);
+  }, [getDock, hasPitch, handleCloseDock]);
+
+  // The Step pane's Clear lock: clear, leave the pane, and hand focus back to
+  // the step that was being edited (the old strip's contract).
+  const handleClearStepLock = useCallback((trackId: string, step: number) => {
+    dispatch({ type: 'SET_PARAMETER_LOCK', trackId, step, lock: null });
+    setDock(prev => dismissDockPane(prev, hasPitch(trackId)));
+    focusRowControl(trackId, [`[data-step-index="${step}"]`]);
+  }, [dispatch, hasPitch, focusRowControl]);
+
+  // Change instrument (issue #63) from the row's badge or the Track pane's
+  // Instrument button: both open the one picker in the dock.
+  const instrumentOpenerRef = useRef<HTMLElement | null>(null);
+  const handleToggleInstrumentPicker = useCallback((trackId: string, opener?: HTMLElement) => {
+    const current = getDock();
+    if (opener && !isDockInstrumentPickerOpen(current, trackId)) instrumentOpenerRef.current = opener;
+    commitDock(toggleDockInstrumentPicker(current, trackId));
+  }, [commitDock, getDock]);
+
+  const handleChooseInstrument = useCallback((trackId: string, sampleId: string) => {
+    handleSetInstrument(trackId, sampleId);
+    setDock(closeDockInstrumentPicker);
+    // Committing closes the picker so the person sees the result; focus goes
+    // back to whatever opened it, or the Track pane's button, or the name.
+    const opener = instrumentOpenerRef.current;
+    instrumentOpenerRef.current = null;
+    requestAnimationFrame(() => {
+      const dockButton = tracksRef.current?.querySelector<HTMLElement>(`#${EDITOR_DOCK_ID} .dock-instrument-button`);
+      if (focusFirstVisible([opener, dockButton])) return;
+      focusRowControl(trackId, ['.track-name']);
+    });
+  }, [handleSetInstrument, focusRowControl]);
+
+  // Portrait renders no rows and no dock: close it, so rotating back to
+  // landscape or desktop finds it closed, as it is on load. Landscape keeps
+  // the dock open (it is a bottom dock there) with its pane and picker.
+  useLayoutEffect(() => {
+    if (orientationMode !== 'portrait') return;
+    setDock(prev => closeDockInstrumentPicker(closeDock(prev)));
+  }, [orientationMode]);
 
   // Phase 36: Centralized keyboard handling via useKeyboard hook
   // Handles: Space (play/pause), Escape (cancel/clear), Delete (remove selection),
@@ -483,15 +647,17 @@ export function StepSequencer() {
       stablePlayPause();
     },
     onEscape: () => {
-      // Cancel copy mode OR close help panel OR close landscape drawer OR clear selection
+      // Close help panel OR cancel copy mode OR clear selection OR leave the Step pane
       if (isShortcutsPanelOpen) {
         setIsShortcutsPanelOpen(false);
-      } else if (openDrawerTrackId) {
-        setOpenDrawerTrackId(null);
       } else if (getCopySource()) {
         setCopySource(null);
       } else if ((getState().selection?.steps.size ?? 0) > 0) {
         dispatch({ type: 'CLEAR_SELECTION' });
+      } else if (getDock().open && getDock().pane === 'step') {
+        // The Step pane replaced the strip under the row, which closed on an
+        // outside click; Escape on the grid leaves it instead.
+        handleDismissDockPane();
       }
     },
     onDelete: () => {
@@ -587,6 +753,99 @@ export function StepSequencer() {
 
   // Phase 21: Check if session is published (read-only)
   const isPublished = multiplayer?.isPublished ?? false;
+
+  // Editor dock: every track can be docked (Step and Track apply to drums
+  // too); only melodic tracks have Notes and ghosts. A docked track that is
+  // deleted, here or by a collaborator, closes the dock.
+  const melodicTracks = useMemo(
+    () => state.tracks.filter(t => !isDrumInstrument(t.sampleId)),
+    [state.tracks],
+  );
+  const melodicTrackIds = useMemo(() => melodicTracks.map(t => t.id), [melodicTracks]);
+  const trackIds = useMemo(() => new Set(state.tracks.map(t => t.id)), [state.tracks]);
+  const reconciledDock = reconcileDock(dock, trackIds);
+  if (reconciledDock !== dock) setDock(reconciledDock);
+  // Copy mode ends, as Escape ends it, when its source track is gone: there is
+  // nothing left to paste, and a later track must not inherit the source.
+  if (copySource !== null && !trackIds.has(copySource)) setCopySource(null);
+  const dockedTrack = reconciledDock.trackId
+    ? state.tracks.find(t => t.id === reconciledDock.trackId) ?? null
+    : null;
+  const isDockOpen = reconciledDock.open && dockedTrack !== null;
+  const dockPane = effectiveDockPane(
+    reconciledDock,
+    dockedTrack !== null && !isDrumInstrument(dockedTrack.sampleId),
+  );
+  const ghostVisibility = useMemo(
+    () => resolveGhostVisibility(reconciledDock, melodicTrackIds),
+    [reconciledDock, melodicTrackIds],
+  );
+  const handleToggleGhost = useCallback((ghostId: string) => {
+    setDock(prev => toggleGhost(prev, ghostId, melodicTrackIds));
+  }, [melodicTrackIds]);
+
+  // The Track pane's edits, by track id. A published session gets none that
+  // change state: its controls render disabled and the picker is absent.
+  const dockTrackActions = useMemo<DockTrackActions>(() => ({
+    onSetTranspose: handleSetTranspose,
+    onSetStepCount: handleSetStepCount,
+    onSetInstrument: isPublished ? undefined : handleChooseInstrument,
+    onSetFMParams: handleSetFMParams,
+    onRotatePattern: handleRotatePattern,
+    onInvertPattern: handleInvertPattern,
+    onReversePattern: handleReversePattern,
+    onMirrorPattern: handleMirrorPattern,
+    onEuclideanFill: handleEuclideanFill,
+    onSetTrackSwing: handleSetTrackSwing,
+    onStartCopy: handleStartCopy,
+    onCopyTo: handleCopyTo,
+    onClearTrack: handleClearTrack,
+    onDeleteTrack: handleDeleteTrack,
+  }), [
+    isPublished, handleSetTranspose, handleSetStepCount, handleChooseInstrument, handleSetFMParams,
+    handleRotatePattern, handleInvertPattern, handleReversePattern, handleMirrorPattern,
+    handleEuclideanFill, handleSetTrackSwing, handleStartCopy, handleCopyTo, handleClearTrack,
+    handleDeleteTrack,
+  ]);
+
+  // Opening a closed dock pulses the docked row's active cells once (150ms),
+  // so the eye finds the row the dock is editing, then brings the dock into
+  // the viewport if the page has it below the fold (desktop: in landscape the
+  // dock is fixed to the viewport, see below). No pulse and no smooth scroll
+  // under reduced motion.
+  useEffect(() => {
+    if (!dockPulsePendingRef.current || !dock.open) return;
+    dockPulsePendingRef.current = false;
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    if (!reducedMotion) {
+      const cells = tracksRef.current?.querySelectorAll<HTMLElement>('.track-row-wrapper.docked .step-cell.active');
+      cells?.forEach(cell => {
+        cell.classList.remove('pulse');
+        void cell.offsetWidth; // restart the animation if it is still running
+        cell.classList.add('pulse');
+        cell.addEventListener('animationend', () => cell.classList.remove('pulse'), { once: true });
+      });
+    }
+    if (orientationMode === 'landscape') return;
+    const reveal = setTimeout(() => {
+      const dockElement = tracksRef.current?.querySelector<HTMLElement>(`#${EDITOR_DOCK_ID}`);
+      dockElement?.scrollIntoView?.({ block: 'nearest', behavior: reducedMotion ? 'auto' : 'smooth' });
+    }, reducedMotion ? 0 : DOCK_TRANSITION_MS);
+    return () => clearTimeout(reveal);
+  }, [dock, orientationMode]);
+
+  // Landscape: the dock covers the bottom 45% of the viewport, so whenever it
+  // opens on a track or switches to another, that track's row is brought into
+  // view above it (EditorDock.css gives the docked row a matching scroll margin).
+  const landscapeDockedId = orientationMode === 'landscape' && isDockOpen ? dockedTrack.id : null;
+  useEffect(() => {
+    if (!landscapeDockedId) return;
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    const reveal = setTimeout(() => {
+      rowWrapper(landscapeDockedId)?.scrollIntoView?.({ block: 'nearest', behavior: reducedMotion ? 'auto' : 'smooth' });
+    }, reducedMotion ? 0 : DOCK_TRANSITION_MS);
+    return () => clearTimeout(reveal);
+  }, [landscapeDockedId, rowWrapper]);
 
   return (
     <div
@@ -704,17 +963,6 @@ export function StepSequencer() {
         </div>
       </div>
 
-      {/* Phase 31G: Loop ruler above grid - set loop regions by dragging */}
-      {features.loopRuler && (
-        <LoopRuler
-          totalSteps={longestTrackStepCount}
-          loopRegion={state.loopRegion ?? null}
-          onSetLoopRegion={isPublished ? () => {} : handleSetLoopRegion}
-          currentStep={state.currentStep}
-          isPlaying={state.isPlaying}
-        />
-      )}
-
       {/* Phase 31A: Progress bar above grid - shows playback position */}
       <div
         className={`progress-bar-container ${state.isPlaying ? 'visible' : ''}`}
@@ -748,8 +996,19 @@ export function StepSequencer() {
 
       {/* Phase 29E: Main content area with tracks and scale sidebar */}
       <div className="sequencer-content">
-        <div className="tracks">
+        <div className="tracks" ref={tracksRef}>
           <div className="tracks-inner">
+            {/* Phase 31G: Loop ruler - set loop regions by dragging. The first
+                row of the scroller, sticky to its top, on the cells' step pitch. */}
+            {features.loopRuler && (
+              <LoopRuler
+                totalSteps={longestTrackStepCount}
+                loopRegion={state.loopRegion ?? null}
+                onSetLoopRegion={isPublished ? () => {} : handleSetLoopRegion}
+                currentStep={state.currentStep}
+                isPlaying={state.isPlaying}
+              />
+            )}
             {/* Phase 34: Show skeletons during session loading to prevent CLS */}
             {multiplayer?.sessionStatus === 'loading' && state.tracks.length === 0 && (
               <>
@@ -759,7 +1018,6 @@ export function StepSequencer() {
               </>
             )}
             {state.tracks.map((track, trackIndex) => {
-              const hasSteps = track.steps.some(s => s);
               const isCopySource = copySource === track.id;
               const isCopyTarget = copySource && !isCopySource;
               // Phase 31F: Selection state for this track
@@ -779,34 +1037,16 @@ export function StepSequencer() {
                   currentStep={state.isPlaying ? state.currentStep : -1}
                   swing={state.swing}
                   anySoloed={anySoloed}
-                  hasSteps={hasSteps}
-                  canDelete={true}
                   isCopySource={isCopySource}
                   isCopyTarget={!!isCopyTarget}
                   readOnly={isPublished}
                   orientationMode={orientationMode}
-                  isLandscapeDrawerOpen={openDrawerTrackId === track.id}
-                  onToggleLandscapeDrawer={() => handleToggleLandscapeDrawer(track.id)}
                   onToggleStep={(step) => handleToggleStep(track.id, step)}
                   onToggleMute={() => handleToggleMute(track.id)}
                   onToggleSolo={() => handleToggleSolo(track.id)}
-                  onClear={() => handleClearTrack(track.id)}
-                  onDelete={() => handleDeleteTrack(track.id)}
-                  onStartCopy={() => handleStartCopy(track.id)}
-                  onCopyTo={() => handleCopyTo(track.id)}
                   onSetParameterLock={(step, lock) => handleSetParameterLock(track.id, step, lock)}
-                  onSetTranspose={(transpose) => handleSetTranspose(track.id, transpose)}
-                  onSetStepCount={(stepCount) => handleSetStepCount(track.id, stepCount)}
-                  onSetFMParams={(fmParams) => handleSetFMParams(track.id, fmParams)}
-                  onSetVolume={(volume) => handleSetVolume(track.id, volume)}
                   scale={state.scale}
-                  onRotatePattern={(direction) => handleRotatePattern(track.id, direction)}
-                  onInvertPattern={() => handleInvertPattern(track.id)}
-                  onReversePattern={() => handleReversePattern(track.id)}
-                  onMirrorPattern={() => handleMirrorPattern(track.id)}
-                  onEuclideanFill={(hits) => handleEuclideanFill(track.id, hits)}
                   onSetName={(name) => handleSetName(track.id, name)}
-                  onSetTrackSwing={(swing) => handleSetTrackSwing(track.id, swing)}
                   onSetInstrument={isPublished
                     ? undefined
                     : (sampleId) => handleSetInstrument(track.id, sampleId)}
@@ -821,9 +1061,50 @@ export function StepSequencer() {
                   onDragOver={() => handleDragOver(track.id)}
                   onDragLeave={handleDragLeave}
                   onDragEnd={handleDragEnd}
+                  isDocked={isTrackDocked(reconciledDock, track.id)}
+                  onToggleDock={() => handleToggleDock(track.id)}
+                  onOpenDock={() => handleOpenDock(track.id)}
+                  isTrackPaneDocked={isTrackDocked(reconciledDock, track.id) && dockPane === 'track'}
+                  onToggleTrackPane={() => handleToggleDockTrackPane(track.id)}
+                  dockSelectedStep={dockSelectedStep(reconciledDock, track.id)}
+                  onSelectDockStep={(step) => handleSelectDockStep(track.id, step)}
+                  isInstrumentPickerOpen={isDockInstrumentPickerOpen(reconciledDock, track.id)}
+                  onToggleInstrumentPicker={(opener) => handleToggleInstrumentPicker(track.id, opener)}
                 />
               );
             })}
+            {/* Editor dock: after the rows, never between them. */}
+            <EditorDock
+              open={isDockOpen}
+              track={dockedTrack}
+              tracks={state.tracks}
+              melodicTracks={melodicTracks}
+              pane={dockPane}
+              selectedStep={reconciledDock.selectedStep}
+              instrumentPickerOpen={reconciledDock.instrumentPickerOpen}
+              copySourceId={copySource}
+              detent={reconciledDock.detent}
+              ghostVisibility={ghostVisibility}
+              loopRegion={state.loopRegion ?? null}
+              currentStep={state.isPlaying ? state.currentStep : -1}
+              anySoloed={anySoloed}
+              scale={state.scale}
+              readOnly={isPublished}
+              scrollerRef={tracksRef}
+              landscape={orientationMode === 'landscape'}
+              onSelectTrack={handleOpenDock}
+              onSetPane={handleSetDockPane}
+              onSelectStep={handleSelectDockStep}
+              onToggleDetent={handleToggleDockDetent}
+              onToggleGhost={handleToggleGhost}
+              onClose={handleCloseDock}
+              onDismissPane={handleDismissDockPane}
+              onToggleStep={handleToggleStep}
+              onSetParameterLock={handleSetParameterLock}
+              onClearStepLock={handleClearStepLock}
+              trackActions={dockTrackActions}
+              onToggleInstrumentPicker={handleToggleInstrumentPicker}
+            />
           </div>
         </div>
 

@@ -1,32 +1,24 @@
 import { test, expect, useMockAPI, waitForCollaborationReady } from './global-setup';
 import { createSessionWithRetry } from './test-utils';
+import { CELL_GAP, DESKTOP_STEP_GEOMETRY, cellWidth as geometryCellWidth } from '../src/components/step-geometry';
 
 /**
- * PitchContour SVG Alignment Tests
+ * Pitch contour alignment (specs/PIANO-ROLL-DOCK.md, phases 5 and 8).
  *
- * CRITICAL: These tests verify that PitchContour SVG coordinates match actual DOM positions.
+ * The contour used to be an SVG overlay drawn under each melodic row, placed
+ * with a hardcoded 39px step constant; when the constant drifted from the CSS,
+ * dots landed over the wrong cells (Bug #pitch-contour-alignment). That
+ * overlay is gone. Each active melodic step now carries its own contour mark
+ * inside its cell (StepCell.tsx, step-contour.ts), so a mark cannot leave its
+ * column. What a browser still has to show:
  *
- * BACKGROUND (Bug #pitch-contour-alignment):
- * The PitchContour component uses a hardcoded cellWidth constant to calculate SVG coordinates.
- * If this constant doesn't match the actual CSS dimensions (StepCell.css + TrackRow.css gap),
- * the contour dots will be misaligned - appearing over the wrong step cells.
- *
- * ROOT CAUSE: cellWidth was 27px but actual CSS is 36px + 3px gap = 39px.
- * This caused dots intended for step 10 to appear over step 7 visually.
- *
- * PREVENTION: This test queries actual DOM positions at runtime and compares to SVG positions.
- * If CSS changes, this test will fail, alerting developers to update the JS constant.
- *
- * Files involved:
- * - src/components/ChromaticGrid.tsx (PitchContour component, cellWidth constant line ~242)
- * - src/components/StepCell.css (cell width: 36px desktop, 44px/48px mobile)
- * - src/components/TrackRow.css (gap: 3px line ~606)
- * - src/components/PitchContour.test.ts (unit tests, CELL_WIDTH constant line ~19)
- *
- * @see src/components/PitchContour.test.ts for unit tests
+ * - the rows' rendered step pitch matches the shared step geometry
+ *   (step-geometry.ts) that the loop ruler and the dock's roll are placed on;
+ * - every active melodic step shows a mark inside its own cell, inactive
+ *   steps show none, and nothing else is drawn in or under the row.
  */
 
-test.describe('PitchContour alignment', () => {
+test.describe('Pitch contour alignment', () => {
   test.beforeEach(async ({ page }) => {
     // Use desktop viewport to match the 36px + 3px = 39px calculation
     await page.setViewportSize({ width: 1280, height: 800 });
@@ -36,12 +28,9 @@ test.describe('PitchContour alignment', () => {
     page,
     request,
   }) => {
-    /**
-     * This test extracts actual CSS values at runtime and compares to expected values.
-     * If CSS changes, this test will fail and alert developers to update JS constants in:
-     * - src/components/ChromaticGrid.tsx (cellWidth constant)
-     * - src/components/PitchContour.test.ts (CELL_WIDTH constant)
-     */
+    // The rows, the loop ruler and the roll all place themselves with
+    // step-geometry.ts; this checks the CSS still renders that geometry.
+    //
     // Seed the state this assertion needs directly. Going through the landing
     // page and instrument picker made an unrelated session-creation click part
     // of this CSS contract and occasionally left WebKit on the landing page.
@@ -101,29 +90,26 @@ test.describe('PitchContour alignment', () => {
 
     console.log(`CSS dimensions: cellWidth=${cellWidth}px, gap=${gap}px, total=${totalCellWidth}px`);
 
-    // CRITICAL ASSERTION: Total must match the JS constant (39px on desktop)
-    // The PitchContour component uses cellWidth = 39
-    // If this fails, update:
-    //   1. ChromaticGrid.tsx line ~242: const cellWidth = 39;
-    //   2. PitchContour.test.ts line ~19: const CELL_WIDTH = 39;
-    const EXPECTED_TOTAL = 39;
-    expect(totalCellWidth).toBe(EXPECTED_TOTAL);
+    // CRITICAL ASSERTION: the rendered pitch is the shared step geometry's.
+    expect(cellWidth).toBe(geometryCellWidth(DESKTOP_STEP_GEOMETRY));
+    expect(gap).toBe(CELL_GAP);
+    expect(totalCellWidth).toBe(DESKTOP_STEP_GEOMETRY.stepPitch);
   });
 
-  test('SVG contour dots align with step cells for session with pitch variation', async ({
+  test('contour marks sit inside active melodic cells and nothing is drawn under the row', async ({
     page,
     request,
   }) => {
     test.skip(useMockAPI, 'Rendered contour fixture requires the Worker-backed session path');
-    // Create a session with known pitch variation pattern
-    const sessionData = {
+    const active = [true, true, true, true, false, false, true, true];
+    const { id: sessionId } = await createSessionWithRetry(request, {
       tracks: [
         {
           id: 'track-1',
           name: 'Pitch Test',
-          // PitchContour is intentionally limited to melodic instruments.
+          // Contour marks are limited to melodic instruments.
           sampleId: 'synth:lead',
-          steps: [true, true, true, true, false, false, true, true, ...Array(120).fill(false)],
+          steps: [...active, ...Array(120).fill(false)],
           parameterLocks: [
             { pitch: 0 },
             { pitch: 5 },
@@ -144,71 +130,33 @@ test.describe('PitchContour alignment', () => {
       tempo: 120,
       swing: 0,
       version: 1,
-    };
-
-    const { id: sessionId } = await createSessionWithRetry(request, sessionData);
-
-    // Navigate directly to session
+    });
     await page.goto(`/s/${sessionId}`);
-
-    // Wait for WebSocket connection to ensure state is fully synced
     await waitForCollaborationReady(page);
 
-    // Wait for track row to appear
-    await expect(page.locator('.track-row')).toBeVisible({ timeout: 10000 });
+    const row = page.locator('.track-row').first();
+    await expect(row).toBeVisible({ timeout: 10000 });
+    const cells = row.locator('.step-cell');
+    await expect(cells).toHaveCount(active.length);
 
-    // Wait for pitch contour to render (using networkidle instead of arbitrary timeout)
-    await page.waitForLoadState('networkidle');
-
-    const pitchContour = page.locator('.pitch-contour').first();
-    await expect(pitchContour).toBeVisible({ timeout: 10000 });
-
-    // Get all contour dots
-    const contourDots = pitchContour.locator('.contour-dot');
-    const dotCount = await contourDots.count();
-    console.log(`Found ${dotCount} contour dots`);
-
-    expect(dotCount, 'fixture must render at least two contour dots').toBeGreaterThanOrEqual(2);
-
-    // Get step cells for this track
-    const trackRow = page.locator('.track-row').first();
-    const trackStepCells = trackRow.locator('.step-cell');
-
-    // For each contour dot, verify it aligns with its corresponding step cell
-    for (let i = 0; i < dotCount; i++) {
-      const dot = contourDots.nth(i);
-      const dotBox = await dot.boundingBox();
-      if (!dotBox) {
-        throw new Error(`Contour dot ${i} has no rendered bounding box`);
+    for (let step = 0; step < active.length; step++) {
+      const mark = cells.nth(step).locator('[data-testid="step-contour"]');
+      if (!active[step]) {
+        await expect(mark, `step ${step + 1} is silent and has no mark`).toHaveCount(0);
+        continue;
       }
-
-      // Get the dot's center X position
-      const dotCenterX = dotBox.x + dotBox.width / 2;
-
-      // Find the closest step cell
-      let closestCellIndex = -1;
-      let minDistance = Infinity;
-
-      const cellCount = await trackStepCells.count();
-      for (let j = 0; j < Math.min(cellCount, 16); j++) {
-        const cell = trackStepCells.nth(j);
-        const cellBox = await cell.boundingBox();
-        if (!cellBox) continue;
-
-        const cellCenterX = cellBox.x + cellBox.width / 2;
-        const distance = Math.abs(dotCenterX - cellCenterX);
-
-        if (distance < minDistance) {
-          minDistance = distance;
-          closestCellIndex = j;
-        }
-      }
-
-      // The dot should be within 5px of the cell center
-      // This tolerance accounts for sub-pixel rendering but catches major misalignment
-      // (The original bug had 12px+ misalignment)
-      expect(minDistance).toBeLessThan(5);
-      console.log(`Dot ${i}: closest to cell ${closestCellIndex}, distance=${minDistance.toFixed(1)}px`);
+      await expect(mark, `step ${step + 1} has its mark`).toHaveCount(1);
+      const [markBox, cellBox] = await Promise.all([mark.boundingBox(), cells.nth(step).boundingBox()]);
+      if (!markBox || !cellBox) throw new Error(`step ${step + 1} must be measurable`);
+      // The mark is inside its own cell: it cannot drift onto a neighbour.
+      expect(markBox.x).toBeGreaterThanOrEqual(cellBox.x - 0.5);
+      expect(markBox.x + markBox.width).toBeLessThanOrEqual(cellBox.x + cellBox.width + 0.5);
+      expect(markBox.y).toBeGreaterThanOrEqual(cellBox.y - 0.5);
+      expect(markBox.y + markBox.height).toBeLessThanOrEqual(cellBox.y + cellBox.height + 0.5);
     }
+
+    // Nothing else is drawn in or under the row: no overlay, only cells.
+    await expect(page.locator('.pitch-contour, .contour-dot, .contour-line')).toHaveCount(0);
+    await expect(row.locator('.steps > :not(.step-cell)')).toHaveCount(0);
   });
 });

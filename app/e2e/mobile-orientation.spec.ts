@@ -3,14 +3,14 @@
  *
  * Tests for the mobile interface simplification feature:
  * - Portrait mode: consumption-only interface
- * - Landscape mode: creation with inline drawer pattern
+ * - Landscape mode: creation, with the editor dock as a bottom dock
  * - Orientation transitions: smooth and correct visibility
  *
  * Run with: npx playwright test e2e/mobile-orientation.spec.ts
  */
 
 import { test, expect, waitForAppReady, Page } from './global-setup';
-import { createPopulatedSessionWithRetry } from './test-utils';
+import { createPopulatedSessionWithRetry, createSessionWithRetry } from './test-utils';
 
 // Device configurations
 const PORTRAIT_VIEWPORT = { width: 375, height: 667 }; // iPhone SE portrait
@@ -250,94 +250,110 @@ test.describe('Mobile Orientation - Landscape Mode', () => {
     await expect(muteBtn).toHaveClass(/active/);
   });
 
-  test('tapping track name should open drawer with Copy/Clear/Delete', async ({ page }) => {
+  test('tapping track name should open the dock on its Track pane with Copy/Clear/Delete', async ({ page }) => {
     // Add a track first since sessions start empty
     await addTrack(page);
 
     const trackName = page.locator('.track-name').first();
     await expect(trackName).toBeVisible();
 
-    // Tap track name to open drawer
+    // Tap track name: the dock opens on the Track pane (after the 200ms click delay)
     await trackName.click();
+    const dock = page.getByTestId('editor-dock');
+    await expect(dock).toHaveClass(/\bopen\b/, { timeout: 3000 });
+    await expect(dock).toHaveAttribute('data-pane', 'track');
 
-    // Wait for the 200ms click delay + drawer to appear
-    const drawer = page.locator('.track-drawer').first();
-    await expect(drawer).toBeVisible({ timeout: 3000 });
-
-    // Drawer should contain Copy, Clear, and Delete buttons
-    await expect(drawer.locator('.drawer-action-btn-compact', { hasText: 'Copy' })).toBeVisible();
-    await expect(drawer.locator('.drawer-action-btn-compact', { hasText: 'Clear' })).toBeVisible();
-    await expect(drawer.locator('.drawer-action-btn-compact.destructive')).toBeVisible();
+    // The Track pane holds the actions the row has no room for
+    const actions = dock.getByRole('group', { name: 'Track actions' });
+    await expect(actions.getByRole('button', { name: 'Copy' })).toBeVisible();
+    await expect(actions.getByRole('button', { name: 'Clear' })).toBeVisible();
+    await expect(actions.getByRole('button', { name: 'Delete' })).toBeVisible();
+    // No drawer and no panel opens under the row
+    await expect(page.locator('.track-drawer, .instrument-panel-container')).toHaveCount(0);
   });
 
-  test('landscape drawer supports keyboard disclosure and Escape focus restoration @blocking', async ({ page }) => {
+  test('landscape track name discloses the dock by keyboard and Escape restores focus @blocking', async ({ page }) => {
     await addTrack(page);
 
     const trigger = page.locator('.track-name').first();
+    const dock = page.getByTestId('editor-dock');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    // The dock is always in the document (inert while closed), so the name
+    // can always point at it.
+    await expect(trigger).toHaveAttribute('aria-controls', 'editor-dock');
     await trigger.focus();
     await trigger.press('Enter');
 
-    const drawer = page.locator('.track-drawer').first();
-    await expect(drawer).toBeVisible({ timeout: 3000 });
+    await expect(dock).toHaveClass(/\bopen\b/, { timeout: 3000 });
     await expect(trigger).toHaveAttribute('aria-expanded', 'true');
-    // aria-controls may only reference an element that exists, and the drawer
-    // is unmounted while closed.
-    await expect(trigger).toHaveAttribute('aria-controls', await drawer.getAttribute('id') ?? '');
+    await expect(dock).not.toHaveAttribute('inert', '');
 
+    // Escape inside the dock closes it (a drum has no Notes pane to go back
+    // to) and hands focus back to the row it was editing.
+    await dock.getByRole('group', { name: 'Dock pane' }).getByRole('button', { name: 'Track', exact: true }).focus();
     await page.keyboard.press('Escape');
-    await expect(drawer).not.toBeVisible({ timeout: 3000 });
+    await expect(dock).not.toHaveClass(/\bopen\b/, { timeout: 3000 });
     await expect(trigger).toBeFocused();
     await expect(trigger).toHaveAttribute('aria-expanded', 'false');
-    await expect(trigger).not.toHaveAttribute('aria-controls', /./);
+    await expect(dock).toHaveAttribute('aria-hidden', 'true');
+    await expect(dock).toHaveAttribute('inert', '');
   });
 
-  test('landscape drawer keeps the destructive action distinguishable without hover @blocking', async ({ page }) => {
+  test('landscape dock keeps the destructive action distinguishable without hover @blocking', async ({ page }) => {
     await addTrack(page);
 
     await page.locator('.track-name').first().click();
-    const drawer = page.locator('.track-drawer').first();
-    await expect(drawer).toBeVisible({ timeout: 3000 });
+    const actions = page.getByTestId('editor-dock').getByRole('group', { name: 'Track actions' });
+    await expect(actions).toBeVisible({ timeout: 3000 });
 
-    // This drawer is the touch surface: neither :hover nor :focus-visible ever
-    // fires there, so Delete must differ from its neighbours at rest.
-    const deleteBtn = drawer.locator('.drawer-action-btn-compact.destructive');
-    const clearBtn = drawer.locator('.drawer-action-btn-compact', { hasText: 'Clear' });
-    await expect(deleteBtn).toHaveText('Delete');
-
+    // The dock is the touch surface here: neither :hover nor :focus-visible
+    // ever fires there, so Delete must differ from its neighbours at rest.
+    const deleteBtn = actions.getByRole('button', { name: 'Delete' });
+    const clearBtn = actions.getByRole('button', { name: 'Clear' });
     const deleteBorder = await deleteBtn.evaluate((el) => getComputedStyle(el).borderTopColor);
     const clearBorder = await clearBtn.evaluate((el) => getComputedStyle(el).borderTopColor);
     expect(deleteBorder).not.toBe(clearBorder);
   });
 
-  test('landscape drawer uses non-overlapping 44px control targets @blocking', async ({ page }) => {
+  test('landscape dock uses non-overlapping 44px control targets @blocking', async ({ page }) => {
     await addTrack(page);
 
     await page.locator('.track-name').first().click();
-    const drawer = page.locator('.track-drawer').first();
-    await expect(drawer).toBeVisible({ timeout: 3000 });
+    const dock = page.getByTestId('editor-dock');
+    await expect(dock).toHaveClass(/\bopen\b/, { timeout: 3000 });
 
-    const controls = drawer.locator('button, select');
-    const controlCount = await controls.count();
-    expect(controlCount).toBeGreaterThan(0);
+    type Box = { x: number; y: number; width: number; height: number };
+    const overlaps = (a: Box, b: Box) => Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x) > 0.5
+      && Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y) > 0.5;
+    const measure = async (controls: ReturnType<Page['locator']>) => {
+      const count = await controls.count();
+      expect(count).toBeGreaterThan(0);
+      const boxes: Box[] = [];
+      for (let index = 0; index < count; index += 1) {
+        const box = await controls.nth(index).boundingBox();
+        expect(box, `control ${index} should have a layout box`).not.toBeNull();
+        expect(box!.width, `control ${index} width`).toBeGreaterThanOrEqual(44);
+        expect(box!.height, `control ${index} height`).toBeGreaterThanOrEqual(44);
+        boxes.push(box!);
+      }
+      for (let a = 0; a < boxes.length; a += 1) {
+        for (let b = a + 1; b < boxes.length; b += 1) {
+          expect(overlaps(boxes[a], boxes[b]), `controls ${a} and ${b} should not overlap`).toBe(false);
+        }
+      }
+      return boxes;
+    };
 
-    const boxes = [];
-    for (let index = 0; index < controlCount; index += 1) {
-      const box = await controls.nth(index).boundingBox();
-      expect(box, `control ${index} should have a layout box`).not.toBeNull();
-      expect(box!.width, `control ${index} width`).toBeGreaterThanOrEqual(44);
-      expect(box!.height, `control ${index} height`).toBeGreaterThanOrEqual(44);
-      boxes.push(box!);
-    }
-
-    for (let index = 1; index < boxes.length; index += 1) {
-      expect(
-        boxes[index].x,
-        `control ${index} should not overlap control ${index - 1}`,
-      ).toBeGreaterThanOrEqual(boxes[index - 1].x + boxes[index - 1].width);
-    }
+    // The strip: pane chips and close, then the Track pane's controls, which
+    // scroll sideways in their own lane between them.
+    const head = await measure(dock.locator('.dock-pane-chips button, .dock-head-end button'));
+    await measure(dock.locator('.dock-pane-track').locator('button:visible, select:visible'));
+    const lane = await dock.locator('.dock-pane-track').boundingBox();
+    expect(lane).not.toBeNull();
+    for (const box of head) expect(overlaps(box, lane!)).toBe(false);
   });
 
-  test('narrow landscape drawer scrolls every control into view and disables reduced motion @blocking', async ({ page, request }) => {
+  test('narrow landscape dock scrolls every control into view and disables reduced motion @blocking', async ({ page, request }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.setViewportSize({ width: 480, height: 320 });
     const { id } = await createPopulatedSessionWithRetry(request);
@@ -347,73 +363,71 @@ test.describe('Mobile Orientation - Landscape Mode', () => {
     const trackName = page.locator('.track-name').first();
     await trackName.focus();
     await page.keyboard.press('Enter');
-    const drawer = page.locator('.track-drawer').first();
-    await expect(drawer).toBeVisible();
+    const dock = page.getByTestId('editor-dock');
+    await expect(dock).toHaveClass(/\bopen\b/);
+    const lane = dock.locator('.dock-pane-track');
 
-    const overflow = await drawer.evaluate((element) => {
+    const overflow = await lane.evaluate((element) => {
       const style = getComputedStyle(element);
       return {
         overflowX: style.overflowX,
         scrollWidth: element.scrollWidth,
         clientWidth: element.clientWidth,
-        animationName: style.animationName,
       };
     });
     expect(overflow.overflowX).toBe('auto');
     expect(overflow.scrollWidth).toBeGreaterThan(overflow.clientWidth);
-    expect(overflow.animationName).toBe('none');
+    expect(await dock.evaluate(element => getComputedStyle(element).transitionDuration))
+      .toMatch(/^0s(, 0s)*$/);
 
-    await drawer.evaluate(element => { element.scrollLeft = element.scrollWidth; });
-    const drawerBox = await drawer.boundingBox();
-    const deleteBox = await drawer.getByRole('button', { name: 'Delete' }).boundingBox();
-    expect(drawerBox).not.toBeNull();
+    await lane.evaluate(element => { element.scrollLeft = element.scrollWidth; });
+    const laneBox = await lane.boundingBox();
+    const deleteBox = await lane.getByRole('button', { name: 'Delete' }).boundingBox();
+    expect(laneBox).not.toBeNull();
     expect(deleteBox).not.toBeNull();
-    expect(deleteBox!.x).toBeGreaterThanOrEqual(drawerBox!.x);
-    expect(deleteBox!.x + deleteBox!.width).toBeLessThanOrEqual(drawerBox!.x + drawerBox!.width + 1);
-
-    const transitionDuration = await drawer.getByRole('button', { name: 'Delete' })
-      .evaluate(element => getComputedStyle(element).transitionDuration);
-    expect(transitionDuration).toBe('0s');
+    expect(deleteBox!.x).toBeGreaterThanOrEqual(laneBox!.x);
+    expect(deleteBox!.x + deleteBox!.width).toBeLessThanOrEqual(laneBox!.x + laneBox!.width + 1);
   });
 
-  test('activating another track name should close first drawer (accordion)', async ({ page, request }) => {
+  test('activating another track name moves the one dock to that track', async ({ page, request }) => {
     const { id } = await createPopulatedSessionWithRetry(request);
     await page.goto(`/s/${id}`);
     await waitForAppReady(page);
 
     const trackNames = page.locator('.track-name');
     await expect(trackNames).toHaveCount(10);
+    const dock = page.getByTestId('editor-dock');
 
-    // Open the first drawer and then activate the second disclosure. Keyboard
-    // activation avoids conflating accordion ownership with horizontal-grid
-    // hit testing (covered separately above).
+    // Keyboard activation avoids conflating dock ownership with
+    // horizontal-grid hit testing (covered separately above).
     await trackNames.first().focus();
     await page.keyboard.press('Enter');
-    const firstDrawer = page.locator('.track-drawer').first();
-    await expect(firstDrawer).toBeVisible({ timeout: 3000 });
+    await expect(dock.locator('.dock-title b')).toHaveText('Track 1', { timeout: 3000 });
 
     await trackNames.nth(1).focus();
     await page.keyboard.press('Enter');
-
-    // Only one drawer should be visible (accordion behavior)
-    const visibleDrawers = page.locator('.track-drawer');
-    await expect(visibleDrawers).toHaveCount(1);
+    await expect(dock.locator('.dock-title b')).toHaveText('Track 2');
+    await expect(dock).toHaveAttribute('data-pane', 'track');
+    await expect(page.locator('.track-row-wrapper.docked')).toHaveCount(1);
+    await expect(trackNames.first()).toHaveAttribute('aria-expanded', 'false');
+    await expect(trackNames.nth(1)).toHaveAttribute('aria-expanded', 'true');
   });
 
-  test('tapping same track name again should close drawer', async ({ page }) => {
+  test('tapping same track name again should close the dock', async ({ page }) => {
     // Add a track first since sessions start empty
     await addTrack(page);
 
     const trackName = page.locator('.track-name').first();
+    const dock = page.getByTestId('editor-dock');
 
-    // Open drawer
+    // Open
     await trackName.click();
-    const drawer = page.locator('.track-drawer').first();
-    await expect(drawer).toBeVisible({ timeout: 3000 });
+    await expect(dock).toHaveClass(/\bopen\b/, { timeout: 3000 });
 
-    // Close drawer by tapping same name again
+    // Close by tapping the same name again
     await trackName.click();
-    await expect(drawer).not.toBeVisible({ timeout: 3000 });
+    await expect(dock).not.toHaveClass(/\bopen\b/, { timeout: 3000 });
+    await expect(dock).toHaveAttribute('aria-hidden', 'true');
   });
 
   test('step grid should show more cells than old mobile', async ({ page }) => {
@@ -442,6 +456,136 @@ test.describe('Mobile Orientation - Landscape Mode', () => {
     // State should change
     const isActive = await firstCell.evaluate(el => el.classList.contains('active'));
     expect(isActive).not.toBe(wasActive);
+  });
+});
+
+test.describe('Landscape editor dock', () => {
+  /** A melodic track with notes across two pages, and a drum track. */
+  function dockSession(request: Parameters<typeof createSessionWithRetry>[0]) {
+    const track = (id: string, name: string, sampleId: string, active: number[]) => ({
+      id,
+      name,
+      sampleId,
+      steps: Array.from({ length: 128 }, (_, step) => active.includes(step)),
+      parameterLocks: Array.from({ length: 128 }, (_, step) => (active.includes(step) ? { pitch: step % 7 } : null)),
+      volume: 1,
+      pan: 0,
+      muted: false,
+      transpose: 0,
+      stepCount: 32,
+    });
+    return createSessionWithRetry(request, {
+      tracks: [
+        track('kick', 'Kick', 'kick', [0, 8, 16, 24]),
+        track('lead', 'Lead', 'synth:lead', [0, 4, 8, 12, 20, 28]),
+      ],
+      tempo: 120,
+      swing: 0,
+      version: 1,
+    });
+  }
+
+  const leadRow = (page: Page) => page.locator('.track-row-wrapper[data-track-id="lead"]');
+
+  test.beforeEach(async ({ page, request }) => {
+    await page.setViewportSize(LANDSCAPE_VIEWPORT);
+    const { id } = await dockSession(request);
+    await page.goto(`/s/${id}`);
+    await waitForAppReady(page);
+    await expect(page.locator('.track-row-wrapper')).toHaveCount(2);
+  });
+
+  test('the ♪ toggle opens a bottom dock about 45% of the viewport tall, inert while closed @blocking', async ({ page }) => {
+    const dock = page.getByTestId('editor-dock');
+    await expect(dock).toHaveAttribute('aria-hidden', 'true');
+    await expect(dock).toHaveAttribute('inert', '');
+    for (let index = 0; index < 30; index += 1) {
+      await page.keyboard.press('Tab');
+      expect(await page.evaluate(() => document.activeElement?.closest('[inert]') === null)).toBe(true);
+    }
+
+    const toggle = leadRow(page).locator('.expand-toggle');
+    await toggle.click();
+    await expect(dock).toHaveClass(/\bopen\b/);
+    await expect(dock).not.toHaveAttribute('aria-hidden', 'true');
+    await expect(dock).toHaveAttribute('data-pane', 'notes');
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    await expect(leadRow(page)).toHaveClass(/\bdocked\b/);
+    await expect(dock.locator('.piano-roll-editor')).toBeVisible();
+    // One height in landscape: no detent toggle.
+    await expect(dock.getByRole('button', { name: /^(Tall|Compact)$/ })).toHaveCount(0);
+
+    // Pinned to the bottom of the viewport at about 45% of its height, over
+    // the rows' scroller, with the same 134px keyboard column as the rows.
+    await expect.poll(async () => {
+      const box = await dock.boundingBox();
+      return box ? Math.round(box.height) : 0;
+    }).toBeGreaterThanOrEqual(Math.floor(LANDSCAPE_VIEWPORT.height * 0.45) - 2);
+    const [dockBox, tracksBox, keys, column] = await Promise.all([
+      dock.boundingBox(),
+      page.locator('.tracks').boundingBox(),
+      dock.locator('.piano-roll-editor__left').boundingBox(),
+      leadRow(page).locator('.track-left').boundingBox(),
+    ]);
+    expect(Math.abs(dockBox!.y + dockBox!.height - LANDSCAPE_VIEWPORT.height)).toBeLessThanOrEqual(1);
+    expect(dockBox!.height).toBeLessThanOrEqual(Math.ceil(LANDSCAPE_VIEWPORT.height * 0.45) + 2);
+    expect(Math.abs(dockBox!.x - tracksBox!.x)).toBeLessThanOrEqual(1);
+    expect(keys!.width).toBeCloseTo(134, 0);
+    expect(Math.abs(keys!.x - column!.x)).toBeLessThanOrEqual(1);
+    // The docked row is in view above the dock.
+    await expect.poll(async () => {
+      const row = await leadRow(page).boundingBox();
+      return row ? row.y + row.height <= dockBox!.y + 1 && row.y >= 0 : false;
+    }).toBe(true);
+
+    await toggle.click();
+    await expect(dock).not.toHaveClass(/\bopen\b/);
+    await expect(dock).toHaveAttribute('inert', '');
+  });
+
+  test('the roll scrolls with the docked row in both directions, columns aligned @blocking', async ({ page }) => {
+    await leadRow(page).locator('.expand-toggle').click();
+    const dock = page.getByTestId('editor-dock');
+    await expect(dock.locator('.piano-roll-editor')).toBeVisible();
+    const steps = leadRow(page).locator('.steps');
+    const body = dock.locator('.dock-body');
+
+    const expectAligned = async (step: number) => {
+      await expect.poll(async () => {
+        const [cell, note] = await Promise.all([
+          leadRow(page).locator('.step-cell').nth(step).boundingBox(),
+          dock.locator(`.piano-roll-editor .note[data-start="${step}"]`).boundingBox(),
+        ]);
+        return cell && note ? Math.abs(cell.x - note.x) : Infinity;
+      }).toBeLessThan(1);
+    };
+
+    await expectAligned(4);
+    // The row leads: scrolling the row's cells scrolls the roll.
+    await steps.evaluate(element => { element.scrollLeft = 100; });
+    await expect.poll(() => body.evaluate(element => element.scrollLeft)).toBe(100);
+    await expectAligned(12);
+    // The roll leads: scrolling the roll scrolls the row.
+    await body.evaluate(element => { element.scrollLeft = 40; });
+    await expect.poll(() => steps.evaluate(element => element.scrollLeft)).toBe(40);
+    await expectAligned(8);
+    // The keyboard stays pinned to the left edge while the roll scrolls.
+    const [keys, column] = await Promise.all([
+      dock.locator('.piano-roll-editor__left').boundingBox(),
+      leadRow(page).locator('.track-left').boundingBox(),
+    ]);
+    expect(Math.abs(keys!.x - column!.x)).toBeLessThanOrEqual(1);
+  });
+
+  test('the dock\'s Track pane edits the docked track', async ({ page }) => {
+    await leadRow(page).locator('.track-name').click();
+    const dock = page.getByTestId('editor-dock');
+    await expect(dock).toHaveAttribute('data-pane', 'track', { timeout: 3000 });
+    await expect(dock.locator('.dock-title b')).toHaveText('Lead');
+
+    await dock.getByRole('button', { name: 'Rotate pattern right' }).click();
+    await expect(leadRow(page).locator('.step-cell').nth(1)).toHaveClass(/\bactive\b/);
+    await expect(leadRow(page).locator('.step-cell').nth(0)).not.toHaveClass(/\bactive\b/);
   });
 });
 
